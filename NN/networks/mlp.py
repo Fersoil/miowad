@@ -87,21 +87,28 @@ class MLP:
 
         return np.mean((output - y) ** 2)
 
-    def full_backward_propagation(self, input: np.ndarray, y: np.ndarray, learning_rate = 0.01, return_grads = False):
+    def full_backward_propagation(self, input: np.ndarray, y: np.ndarray):
+        """function performs one full backward pass through the network and updates the params. Uses optionally the momentum method and RMSprop.
+
+        Args:
+            input (np.ndarray): matrix of input data
+            y (np.ndarray): single column matrix of target values
+            learning_rate (float, optional): learning rate of the gradient descent. Defaults to 0.01.
+            momentum_rate (float, optional): momentum rate - describes how much the previous change of the weights should influence the new change. Defaults to 0.01.
+            gamma (float, optional): gamma parameter of the RMSprop. Defaults to 1.
+            epsilon (float, optional): small value used in RMSprop algorithm. Defaults to 1e-8.
+
+        Returns:
+            (tuple): tuple of gradients of weights and biases
         """
-        input: an input matrix X
-        y: the target matrix
-        learning_rate: the learning rate
-        """    
 
         y_hat = self.full_forward_pass(input) # forward pass automatically stores the output in the layers
         
         batch_size = input.shape[1]
         
         g = 2 * (y_hat - y) / float(batch_size) # gradient of the loss function
-        if return_grads:
-            db_table = [None] * self.depth # derivatives of output in respect to weights
-            dw_table = [None] * self.depth # derivatives of output in respect to biases
+        db_table = [None] * self.depth # derivatives of output in respect to weights
+        dw_table = [None] * self.depth # derivatives of output in respect to biases
 
         for i in reversed(range(self.depth)):
             dw, db, g = self.layers[i].backward_propagation(g)
@@ -113,69 +120,71 @@ class MLP:
             # print("shape of weights: ", self.layers[i].weights.shape)
             # print("shape of biases: ", self.layers[i].bias.shape)
 
-            self.layers[i].weights -= learning_rate * dw
-            self.layers[i].bias -= learning_rate * db
+            # update params
+            # self.layers[i].update_params(dw, db, learning_rate = learning_rate, momentum_rate = momentum_rate, gamma = gamma, epsilon = epsilon)
 
-            if return_grads:
-                db_table[i] = db
-                dw_table[i] = dw
+            db_table[i] = db
+            dw_table[i] = dw
 
-        if return_grads:
-            return dw_table, db_table
+        return dw_table, db_table
     
-
-    def train(self, input, y, learning_rate = 0.01, epochs = 100):
-        """
-        trains a neural network, returns a list of losses for each epoch
-        """
-        losses = []
-        for epoch in range(epochs):
-            self.full_backward_propagation(input, y, learning_rate)
-            losses.append(self.loss(input, y))
-            if epoch % 100 == 0:
-                print(f"Epoch: {epoch}, Loss: {self.loss(input, y)}")
-        return losses
-    
-
-    def minibatch_train(self, input, y, learning_rate = 0.01, epochs = 100, batch_size = 32):
-        """
-        trains a neural network using mini-batch gradient descent, returns a list of losses for each epoch
-        """
-        losses = []
+    def update_params(self, dw_table, db_table):
         
+        # add regularization
+        
+        for i in range(self.depth):
+            self.layers[i].update_params(dw_table[i], db_table[i])
+    
+
+    def train(self, input, y, epochs = 100, batch_size = 32, learning_rate = 0.01, stochastic_descent = False, momentum = False, 
+              momentum_rate = 0.01, rms_prop = False, rms_rate = 0.9, *args, **kwargs):
+        """
+        trains a neural network, returns a list of losses for each epoch, a wrapper function
+        """
+        
+        losses = []
+        if momentum:
+            dw_momentum = [np.zeros_like(layer.weights) for layer in self.layers]
+        if rms_prop:
+            dw_rms = [np.zeros_like(layer.weights) for layer in self.layers]
 
         for epoch in range(epochs):
             permutation = np.random.permutation(input.shape[1])
             input = input[:, permutation]
             y = y[:, permutation]
-
-            for i in range(0, input.shape[1], batch_size):
-                input_batch = input[:, i:i+batch_size]
-                y_batch = y[:, i:i+batch_size]
-                self.full_backward_propagation(input_batch, y_batch, learning_rate)
-            losses.append(self.loss(input, y))
-            if epoch % 100 == 0:
-                print(f"Epoch: {epoch}, Loss: {self.loss(input, y)}")
-        return losses
-    
-
-    def minibatch_stochastic_train(self, input, y, learning_rate = 0.01, epochs = 100, batch_size = 32):
-        """
-        trains a neural network using stochastic gradient descent, returns a list of losses for each epoch
-        """
-        losses = []
-        
-
-        for epoch in range(epochs):
-            minibatch = np.random.choice(input.shape[1], batch_size, replace=False)
-            input_batch = input[:, minibatch]
-            y_batch = y[:, minibatch]
             
-            self.full_backward_propagation(input_batch, y_batch, learning_rate)
+            if not stochastic_descent:
+                batch_input_len = input.shape[1]
+            else:
+                batch_input_len = batch_size
+
+            for batch_number in range(0, batch_input_len, batch_size):
+                input_batch = input[:, batch_number:batch_number+batch_size]
+                y_batch = y[:, batch_number:batch_number+batch_size]
+                
+                dw, db = self.full_backward_propagation(input_batch, y_batch)
+                
+                # modify the weights and biases
+                # add momentum
+                if momentum:
+                    dw_momentum = [dw[i] * learning_rate + dw_momentum[i] * momentum_rate for i in range(self.depth)]
+                    dw = dw_momentum
+                    
+                # add RMSprop
+
+                if rms_prop:
+                    dw_rms = [rms_rate * dw_rms[i] + (1 - rms_rate) * dw[i] ** 2 for i in range(self.depth)]
+                    dw = [dw[i] / np.sqrt(dw_rms[i]) for i in range(self.depth)]
+                
+                db = [db[i] * learning_rate for i in range(self.depth)]
+                
+                self.update_params(dw, db)
+                
             losses.append(self.loss(input, y))
             if epoch % 100 == 0:
                 print(f"Epoch: {epoch}, Loss: {self.loss(input, y)}")
         return losses
+           
     
     def get_weights(self):
         return [(layer.get_weights(), layer.get_biases()) for layer in self.layers]

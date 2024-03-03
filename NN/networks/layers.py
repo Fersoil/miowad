@@ -17,7 +17,8 @@ class Layer:
 
 class FCLayer(Layer):
     __slots__ = ["input_dim", "output_dim", "activation", "weights", "bias", "output", "linear_output", "input"]
-
+    
+    
     def __init__(self, input_dim, output_dim, activation="sigmoid", weights=None, biases=None, init="uniform"):
             """
             Initializes a layer of a neural network.
@@ -83,6 +84,11 @@ class FCLayer(Layer):
                 self.xavier_init_weights()
             elif init == "He":
                 self.he_init_weights()
+                
+            self.bias_change = None
+            self.weights_change = None
+            self.moving_average_weights = None
+            self.moving_average_bias = None
 
     def __str__(self) -> str:
         return "Fully connected layer with input dimension {} and output dimension {} and {} activation function".format(self.input_dim, self.output_dim, self.activation.__name__)
@@ -178,4 +184,18 @@ class FCLayer(Layer):
         plt.xlabel('Column Index')
         plt.ylabel('Weight Value')
         plt.suptitle('Weights of FCLayer')
-        plt.show()
+        plt.show()       
+        
+
+    
+        
+    def update_params(self, dw: np.ndarray, db: np.ndarray):
+        """function updates parameters of a single layer in a neural network
+
+        Args:
+            dw (np.ndarray): array of derivatives of the loss function with respect to the weights
+            db (np.ndarray): array of derivatives of the loss function with respect to the biases
+        """
+        
+        self.weights -= dw
+        self.bias -= db
