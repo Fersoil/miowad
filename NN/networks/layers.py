@@ -1,5 +1,5 @@
 import numpy as np
-from .activations import relu, sigmoid, linear, prelu, relu_prime, sigmoid_prime, linear_prime, tanh_prime, prelu_prime
+from .activations import relu, sigmoid, linear, prelu, tanh, relu_prime, sigmoid_prime, linear_prime, tanh_prime, prelu_prime
 import matplotlib.pyplot as plt
 
 class Layer:
@@ -16,7 +16,7 @@ class Layer:
     
 
 class FCLayer(Layer):
-    __slots__ = ["input_dim", "output_dim", "activation", "weights", "bias"]
+    __slots__ = ["input_dim", "output_dim", "activation", "weights", "bias", "output", "linear_output", "input"]
 
     def __init__(self, input_dim, output_dim, activation="sigmoid", weights=None, biases=None, init="uniform"):
             """
@@ -41,6 +41,8 @@ class FCLayer(Layer):
                 self.activation = sigmoid
             elif activation == "relu":
                 self.activation = relu
+            elif activation == "tanh":
+                self.activation = tanh
             elif activation == "linear":
                 self.activation = linear
             else:
@@ -109,18 +111,32 @@ class FCLayer(Layer):
         self.weights = np.random.normal(0, std, (self.output_dim, self.input_dim))
         self.bias = np.zeros((self.output_dim, 1))
 
+    
+    def forward_pass_without_activation(self, input):
+        self.input = input
+
+        self.linear_output = np.dot(self.weights, input) + self.bias
+        return self.linear_output
+
 
     def forward_pass(self, input):
-        input = input
-        output = self.activation(np.dot(self.weights, input) + self.bias)
-        return output
+        self.batch_size = input.shape[1]
+        self.output = self.activation(self.forward_pass_without_activation(input))
+        return self.output
     
-    def backward_propagation(self, output_error):
-        input_error = np.dot(self.weights.T, output_error)
-        weights_error = np.dot(output_error, self.input.T)
-        
-        pass
+    def backward_propagation(self, upstream_gradient):
 
+        g = upstream_gradient * self.activation_prime(self.get_linear_output())
+
+        db = np.sum(g) / float(self.batch_size)
+        dw = g.dot(self.get_input().T) / float(self.batch_size)
+
+        g = self.weights.T.dot(g)
+
+        return dw, db, g
+
+
+    # getters for temporary variables
 
     def get_weights(self):
         return self.weights
@@ -128,11 +144,38 @@ class FCLayer(Layer):
     def get_biases(self):
         return self.bias
     
+    def get_linear_output(self):
+        if self.linear_output is None:
+            return None
+        return self.linear_output
+    
+    def get_output(self):
+        if self.output is None and self.linear_output is not None:
+            return self.activation(self.linear_output)
+        if self.output is None and self.linear_output is None and self.input is not None:
+            return self.full_forward_pass(self.input)
+        if self.output is None:
+            return None
+        return self.output
+    
+    def get_input(self):
+        return self.input
+    
+    def get_batch_size(self):
+        if self.batch_size is None:
+            return self.get_input().shape[1]
+        return self.batch_size
+    
+    
     def plot_weights(self):
-        plt.figure(figsize=(10, 6))
+        plt.figure(figsize=(3 * self.input_dim, 3 * self.output_dim))
         for i in range(self.weights.shape[1]):
-            plt.bar(len(self.weights[:, i]), self.weights[:, i])
+            print(self.weights[:, i])
+            plt.subplot(self.weights.shape[1], 1, i+1)
+            plt.bar(range(len(self.weights[:, i])), self.weights[:, i])
+            plt.title(f'weights of Neuron {i}')
+
         plt.xlabel('Column Index')
         plt.ylabel('Weight Value')
-        plt.title('Weights of FCLayer')
+        plt.suptitle('Weights of FCLayer')
         plt.show()

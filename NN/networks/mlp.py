@@ -1,10 +1,9 @@
-from abc import ABC, abstractmethod
 import numpy as np
 from .layers import FCLayer
 
 
 class MLP:
-    __slots__ = ["layers", "seed"]
+    __slots__ = ["layers", "seed", "depth"]
 
     def __init__(self, init_layers, input, weights=None, biases=None, learning_rate=0.01, seed=42):
             """
@@ -63,6 +62,8 @@ class MLP:
                     layer = FCLayer(input_dim, output_dim, activation, init_method)
                 self.layers.append(layer)
 
+                self.depth = len(self.layers)
+
     def __str__(self) -> str:
         description = "MLP with layers:\n"
         for layer in self.layers:
@@ -80,47 +81,47 @@ class MLP:
             output = layer.forward_pass(output)
         return output
     
-    def loss(self, input, y):
-        return np.mean((self.full_forward_pass(input) - y) ** 2)
+    def loss(self, input, y, output = None):
+        if output is None:
+            output = self.full_forward_pass(input)
 
-    def full_backward_propagation(self, input: np.ndarray, y: np.ndarray, learning_rate = 0.01):
+        return np.mean((output - y) ** 2)
+
+    def full_backward_propagation(self, input: np.ndarray, y: np.ndarray, learning_rate = 0.01, return_grads = False):
         """
         input: an input matrix X
         y: the target matrix
         learning_rate: the learning rate
-        """
-        a_s = [input]  # list to store all the layer outputs (after activation function)
-        z_s = [] # list of all weighted inputs into activation function
+        """    
 
-        for layer in self.layers:
-            z = np.dot(layer.weights, a_s[-1]) + layer.bias
-            z_s.append(z)
-            a = layer.activation(z)
-            a_s.append(a)
-
-
-        dw = []  # dC/dW
-        db = []  # dC/dB
-
-        deltas = [None] * len(self.layers)  # error for each layer
-
-        deltas[-1] = ((y-a_s[-1])*(self.layers[-1].activation_prime(z_s[-1])))
-
-
-        for i in reversed(range(len(deltas)-1)):
-            deltas[i] = self.layers[i+1].weights.T.dot(deltas[i+1])*(self.layers[i].activation_prime(z_s[i]))  
+        y_hat = self.full_forward_pass(input) # forward pass automatically stores the output in the layers
         
-        a = [d.shape for d in deltas]
-        batch_size = y.shape[1]
-        db = [d.dot(np.ones((batch_size,1)))/float(batch_size) for d in deltas]
-        dw = [d.dot(a_s[i].T)/float(batch_size) for i,d in enumerate(deltas)]
-        # return the derivitives respect to weight matrix and biases
+        batch_size = input.shape[1]
+        
+        g = 2 * (y_hat - y) / float(batch_size) # gradient of the loss function
+        if return_grads:
+            db_table = [None] * self.depth # derivatives of output in respect to weights
+            dw_table = [None] * self.depth # derivatives of output in respect to biases
 
-        for i, layer in enumerate(self.layers):
-            layer.weights += learning_rate * dw[i]
-            layer.bias += learning_rate * db[i]
+        for i in reversed(range(self.depth)):
+            dw, db, g = self.layers[i].backward_propagation(g)
+            
+            # print("shape of g: ", g.shape)
+            # print("shape of h: ", h[i].shape)
+            # print("shape of dw: ", dw[i].shape)
+            # print("shape of db: ", db[i].shape)
+            # print("shape of weights: ", self.layers[i].weights.shape)
+            # print("shape of biases: ", self.layers[i].bias.shape)
 
-        return dw, db
+            self.layers[i].weights -= learning_rate * dw
+            self.layers[i].bias -= learning_rate * db
+
+            if return_grads:
+                db_table[i] = db
+                dw_table[i] = dw
+
+        if return_grads:
+            return dw_table, db_table
     
 
     def train(self, input, y, learning_rate = 0.01, epochs = 100):
@@ -131,13 +132,55 @@ class MLP:
         for epoch in range(epochs):
             self.full_backward_propagation(input, y, learning_rate)
             losses.append(self.loss(input, y))
-            if epoch % 10 == 0:
+            if epoch % 100 == 0:
                 print(f"Epoch: {epoch}, Loss: {self.loss(input, y)}")
         return losses
     
 
+    def minibatch_train(self, input, y, learning_rate = 0.01, epochs = 100, batch_size = 32):
+        """
+        trains a neural network using mini-batch gradient descent, returns a list of losses for each epoch
+        """
+        losses = []
+        
 
-# TODO backpropagation
-# TODO tests
+        for epoch in range(epochs):
+            permutation = np.random.permutation(input.shape[1])
+            input = input[:, permutation]
+            y = y[:, permutation]
+
+            for i in range(0, input.shape[1], batch_size):
+                input_batch = input[:, i:i+batch_size]
+                y_batch = y[:, i:i+batch_size]
+                self.full_backward_propagation(input_batch, y_batch, learning_rate)
+            losses.append(self.loss(input, y))
+            if epoch % 100 == 0:
+                print(f"Epoch: {epoch}, Loss: {self.loss(input, y)}")
+        return losses
+    
+
+    def minibatch_stochastic_train(self, input, y, learning_rate = 0.01, epochs = 100, batch_size = 32):
+        """
+        trains a neural network using stochastic gradient descent, returns a list of losses for each epoch
+        """
+        losses = []
+        
+
+        for epoch in range(epochs):
+            minibatch = np.random.choice(input.shape[1], batch_size, replace=False)
+            input_batch = input[:, minibatch]
+            y_batch = y[:, minibatch]
+            
+            self.full_backward_propagation(input_batch, y_batch, learning_rate)
+            losses.append(self.loss(input, y))
+            if epoch % 100 == 0:
+                print(f"Epoch: {epoch}, Loss: {self.loss(input, y)}")
+        return losses
+    
+    def get_weights(self):
+        return [(layer.get_weights(), layer.get_biases()) for layer in self.layers]
+    
+
+
     
     
