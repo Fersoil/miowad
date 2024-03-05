@@ -77,9 +77,9 @@ class FCLayer(Layer):
                     raise ValueError("The weights and biases must be provided if the initialization method is None")
             if init == "uniform":
                 self.random_init_weights()
-            elif init == "Xavier":
+            elif init == "xavier":
                 self.xavier_init_weights()
-            elif init == "He":
+            elif init == "he":
                 self.he_init_weights()
             elif init == "normal":
                 self.normal_init_weights()
@@ -103,23 +103,24 @@ class FCLayer(Layer):
         """
         xavier uniform initialization
         """
-        x = np.sqrt(6/(self.input_dim + self.output_dim))        
-        self.weights = np.random.uniform(-x, x, (self.output_dim, self.input_dim)) * np.sqrt(1/self.input_dim)
-        self.bias = np.zeros((self.output_dim, 1))
+        self.normal_init_weights()
+
+        std = np.sqrt(1/self.input_dim)
+        self.weights = self.weights * std
 
     def he_init_weights(self):
         """
         he normal initialization https://arxiv.org/abs/1502.01852v1
         """
-        if self.activation is not relu or self.activation is not prelu:
-            raise Warning("He initialization is recommended for ReLU or PReLU activation function")
-        
+        if self.activation is not relu and self.activation  is not prelu:
+            print(f"He initialization is recommended for ReLU or PReLU activation function, used {self.activation.__name__} instead.")
+        self.normal_init_weights()
+
         std = np.sqrt(2/self.input_dim)
-        self.weights = np.random.normal(0, std, (self.output_dim, self.input_dim))
-        self.bias = np.zeros((self.output_dim, 1))
+        self.weights = self.weights * std
 
     def normal_init_weights(self):
-        self.weights = np.random.normal(0, 1, (self.output_dim, self.input_dim))
+        self.weights = np.random.randn(self.output_dim, self.input_dim)
         self.bias = np.zeros((self.output_dim, 1))
 
     

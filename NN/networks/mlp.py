@@ -24,7 +24,7 @@ class MLP:
             if input.ndim == 1:
                 x_size = 1
             else:
-                x_size = input.shape[1]
+                x_size = input.shape[0]
     
             self.layers = []
             
@@ -53,11 +53,13 @@ class MLP:
                 
                 if weights is not None and biases is not None:
                     try:
+                        print(f"initializing layer {i} using predefined weights and biases")
                         layer = FCLayer(input_dim, output_dim, activation, weights[i], biases[i], )
                     except IndexError:
                         raise ValueError("The number of weights and biases provided does not match the number of layers")
                 else:
-                    layer = FCLayer(input_dim, output_dim, activation, init_method)
+                    print(f"initializing layer {i} using {init_method} initialization")
+                    layer = FCLayer(input_dim, output_dim, activation=activation, init=init_method)
                 self.layers.append(layer)
 
                 self.depth = len(self.layers)
@@ -169,12 +171,11 @@ class MLP:
                 # modify the weights and biases
                 # add momentum
                 if momentum:
-                    print("momentum")
                     momentum_gradients = [dw[i] * (1 - momentum_decay) + momentum_gradients[i] * momentum_decay for i in range(self.depth)]
                     dw = [momentum_gradients[i] for i in range(self.depth)]
                 elif rms_prop:
                     squared_gradients = [squared_gradient_decay * squared_gradients[i] + (1 - squared_gradient_decay) * squared_gradients[i] ** 2 for i in range(self.depth)]
-                    dw = [dw[i] / np.sqrt(squared_gradients[i]) for i in range(self.depth)]
+                    dw = [dw[i] / (np.sqrt(squared_gradients[i]) + epsilon) for i in range(self.depth)]
                 elif adam:
                     momentum_gradients = [dw[i] * (1 - momentum_decay) + momentum_gradients[i] * momentum_decay for i in range(self.depth)]
                     squared_gradients = [squared_gradient_decay * squared_gradients[i] + (1 - squared_gradient_decay) * squared_gradients[i] ** 2 for i in range(self.depth)]

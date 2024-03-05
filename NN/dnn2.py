@@ -534,18 +534,60 @@ from pathlib import Path
 import pandas as pd
 import matplotlib.pyplot as plt
 
-
-data_dir = Path("data")
-square_simple_train = pd.read_csv(data_dir / "regression" / "square-simple-training.csv", index_col=0)
-square_simple_test = pd.read_csv(data_dir / "regression" / "square-simple-test.csv", index_col=0)
+np.random.seed(42)
 
 
-norm = networks.assets.Normalizator(square_simple_train)
+X = np.linspace(-1,1,4).reshape(1,4)
 
-square_simple_train_norm = norm(square_simple_train)
-square_simple_test_norm = norm(square_simple_test)
+
+
+y = 2*X**2
+
+
 
 dnn = Deep_Neural_Network()
-dnn.create(1,1,[5, 5],'regression')
+dnn.create(1,1,[2, 2],'regression')
 
-dnn.train(square_simple_train_norm[["x"]].T.to_numpy(), square_simple_train_norm[["y"]].T.to_numpy(), square_simple_test_norm[["x"]].T.to_numpy(), square_simple_test_norm[["y"]].T.to_numpy(), learning_rate=0.01, epochs=10000, mini_batch_size=32)
+
+layers = [
+    {"output_dim": 2, "activation": "relu", "init": "normal"},
+    {"output_dim": 2, "activation": "relu", "init": "he"},
+    {"activation": "linear"}
+]
+
+mlp = networks.MLP(layers, input=X)
+
+for i, layer in enumerate(mlp.layers):
+    layer.plot_weights()
+#     dnn.W[i+1] = layer.weights
+#     dnn.b[i+1] = layer.bias
+
+
+print(dnn.W)
+
+dnn.train(X,y,X,y,learning_rate=0.01,epochs=1000,mini_batch_size=32)
+
+
+y_hat = dnn.predict(X)
+plt.scatter(X,y)
+plt.scatter(X,y_hat, c="red")
+plt.show()
+
+
+
+# data_dir = Path("data")
+# multimodal_large_train = pd.read_csv(data_dir / "regression" / "multimodal-large-training.csv")
+# multimodal_large_test = pd.read_csv(data_dir / "regression" / "multimodal-large-test.csv")
+
+
+# norm_multimodal = networks.assets.Normalizator(multimodal_large_train)
+
+# multimodal_large_train_norm = norm_multimodal(multimodal_large_train)
+# multimodal_large_test_norm = norm_multimodal(multimodal_large_test)
+
+# plt.scatter(multimodal_large_train["x"], multimodal_large_train["y"])
+
+# dnn = Deep_Neural_Network()
+# dnn.create(1,1,[20, 20],'regression')
+
+# dnn.train(multimodal_large_train_norm[["x"]].T.to_numpy(), multimodal_large_train_norm[["y"]].T.to_numpy(), multimodal_large_test_norm[["x"]].T.to_numpy(), multimodal_large_test_norm[["y"]].T.to_numpy(), learning_rate=0.01, epochs=10000, mini_batch_size=32)
