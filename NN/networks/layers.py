@@ -16,7 +16,7 @@ class Layer:
     
 
 class FCLayer(Layer):
-    __slots__ = ["input_dim", "output_dim", "activation", "weights", "bias", "output", "linear_output", "input"]
+    __slots__ = ["input_dim", "output_dim", "activation", "weights", "bias", "output", "linear_output", "input", "dZ"]
     
     
     def __init__(self, input_dim, output_dim, activation="sigmoid", weights=None, biases=None, init="uniform"):
@@ -63,9 +63,6 @@ class FCLayer(Layer):
             else:
                 raise ValueError("Activation function not supported")
 
-            if init not in [None, "uniform", "Xavier", "He"]:
-                raise ValueError("Initialization method not supported")
-
             if init is None:
                 if weights is not None and biases is not None:
                 
@@ -84,6 +81,10 @@ class FCLayer(Layer):
                 self.xavier_init_weights()
             elif init == "He":
                 self.he_init_weights()
+            elif init == "normal":
+                self.normal_init_weights()
+            else: 
+                raise ValueError("Initialization method not supported")
                 
             self.bias_change = None
             self.weights_change = None
@@ -117,11 +118,15 @@ class FCLayer(Layer):
         self.weights = np.random.normal(0, std, (self.output_dim, self.input_dim))
         self.bias = np.zeros((self.output_dim, 1))
 
+    def normal_init_weights(self):
+        self.weights = np.random.normal(0, 1, (self.output_dim, self.input_dim))
+        self.bias = np.zeros((self.output_dim, 1))
+
     
     def forward_pass_without_activation(self, input):
         self.input = input
 
-        self.linear_output = np.dot(self.weights, input) + self.bias
+        self.linear_output = np.matmul(self.weights,  input) + self.bias
         return self.linear_output
 
 
@@ -132,14 +137,21 @@ class FCLayer(Layer):
     
     def backward_propagation(self, upstream_gradient):
 
-        g = upstream_gradient * self.activation_prime(self.get_linear_output())
+        self.dZ = upstream_gradient * self.activation_prime(self.get_linear_output())
 
-        db = np.sum(g) / float(self.batch_size)
-        dw = g.dot(self.get_input().T) / float(self.batch_size)
+        db = np.sum(self.dZ, axis=1, keepdims=True) #/ float(self.batch_size)
+        dw = np.matmul(self.dZ, self.get_input().T) #/ float(self.batch_size)
 
-        g = self.weights.T.dot(g)
+        # print("input shape ", self.get_input().shape)
+
+        g = np.matmul(self.weights.T, self.dZ) # * self.activation_prime(self.get_linear_output())
+
+        self.input = None
+        self.output = None
+        self.linear_output = None
 
         return dw, db, g
+    
 
 
     # getters for temporary variables
@@ -152,14 +164,14 @@ class FCLayer(Layer):
     
     def get_linear_output(self):
         if self.linear_output is None:
-            return None
+            return self.forward_pass_without_activation(self.input)
         return self.linear_output
     
     def get_output(self):
         if self.output is None and self.linear_output is not None:
             return self.activation(self.linear_output)
         if self.output is None and self.linear_output is None and self.input is not None:
-            return self.full_forward_pass(self.input)
+            return self.forward_pass(self.input)
         if self.output is None:
             return None
         return self.output
@@ -197,5 +209,5 @@ class FCLayer(Layer):
             db (np.ndarray): array of derivatives of the loss function with respect to the biases
         """
         
-        self.weights -= dw
-        self.bias -= db
+        self.weights = self.weights - dw
+        self.bias = self.bias - db

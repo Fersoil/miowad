@@ -3,9 +3,9 @@ from .layers import FCLayer
 
 
 class MLP:
-    __slots__ = ["layers", "seed", "depth"]
+    __slots__ = ["layers", "depth"]
 
-    def __init__(self, init_layers, input, weights=None, biases=None, learning_rate=0.01, seed=42):
+    def __init__(self, init_layers, input, weights=None, biases=None):
             """
             Initialize the Multi-Layer Perceptron (MLP) network.
 
@@ -21,8 +21,6 @@ class MLP:
                 seed (int, optional): The seed value for numpy.random. Defaults to 42.
             """
 
-            self.seed = seed
-            np.random.seed(seed)  # Set the seed for numpy.random
             if input.ndim == 1:
                 x_size = 1
             else:
@@ -87,17 +85,14 @@ class MLP:
 
         return np.mean((output - y) ** 2)
 
-    def full_backward_propagation(self, input: np.ndarray, y: np.ndarray):
+    def full_backward_propagation(self, input: np.ndarray, y: np.ndarray, verbose = False):
         """function performs one full backward pass through the network and updates the params. Uses optionally the momentum method and RMSprop.
 
         Args:
             input (np.ndarray): matrix of input data
             y (np.ndarray): single column matrix of target values
-            learning_rate (float, optional): learning rate of the gradient descent. Defaults to 0.01.
-            momentum_rate (float, optional): momentum rate - describes how much the previous change of the weights should influence the new change. Defaults to 0.01.
-            gamma (float, optional): gamma parameter of the RMSprop. Defaults to 1.
-            epsilon (float, optional): small value used in RMSprop algorithm. Defaults to 1e-8.
-
+            verbose (bool, optional): print the shapes of the gradients. Defaults to False.
+            
         Returns:
             (tuple): tuple of gradients of weights and biases
         """
@@ -105,18 +100,25 @@ class MLP:
         y_hat = self.full_forward_pass(input) # forward pass automatically stores the output in the layers
         
         batch_size = input.shape[1]
+        if verbose:
+            print("y_hat: ", input.shape, y_hat.shape, y.shape)
         
         g = 2 * (y_hat - y) / float(batch_size) # gradient of the loss function
         db_table = [None] * self.depth # derivatives of output in respect to weights
         dw_table = [None] * self.depth # derivatives of output in respect to biases
+        
+        if verbose:
+            print("g mean: ", g.mean())
 
         for i in reversed(range(self.depth)):
+            # print("shape of g: ", g.shape)
+
+
             dw, db, g = self.layers[i].backward_propagation(g)
             
             # print("shape of g: ", g.shape)
-            # print("shape of h: ", h[i].shape)
-            # print("shape of dw: ", dw[i].shape)
-            # print("shape of db: ", db[i].shape)
+            # print("shape of dw: ", dw.shape)
+            # print("shape of db: ", db.shape)
             # print("shape of weights: ", self.layers[i].weights.shape)
             # print("shape of biases: ", self.layers[i].bias.shape)
 
@@ -136,29 +138,29 @@ class MLP:
             self.layers[i].update_params(dw_table[i], db_table[i])
     
 
-    def train(self, input, y, epochs = 100, batch_size = 32, learning_rate = 0.01, stochastic_descent = False, momentum = False, 
-              momentum_rate = 0.01, rms_prop = False, rms_rate = 0.9, *args, **kwargs):
+    def train(self, input, y, max_epochs = 100, batch_size = 32, learning_rate = 0.01, stochastic_descent = False, momentum = False, 
+              momentum_decay = 0.9, rms_prop = False, squared_gradient_decay = 0.99, adam = False, epsilon=1e-8, early_loss_stop = 1e-5, *args, **kwargs):
         """
         trains a neural network, returns a list of losses for each epoch, a wrapper function
         """
         
         losses = []
-        if momentum:
-            dw_momentum = [np.zeros_like(layer.weights) for layer in self.layers]
-        if rms_prop:
-            dw_rms = [np.zeros_like(layer.weights) for layer in self.layers]
+        counter = 0
 
-        for epoch in range(epochs):
-            permutation = np.random.permutation(input.shape[1])
-            input = input[:, permutation]
-            y = y[:, permutation]
+        m = input.shape[1]
+
+        if momentum or adam:
+            momentum_gradients = [np.zeros_like(layer.weights) for layer in self.layers]
+        if rms_prop or adam:
+            squared_gradients = [np.zeros_like(layer.weights) for layer in self.layers]
+
+        for epoch in range(max_epochs):
+            if stochastic_descent:
+                permutation = np.random.permutation(input.shape[1])
+                input = input[:, permutation]
+                y = y[:, permutation]
             
-            if not stochastic_descent:
-                batch_input_len = input.shape[1]
-            else:
-                batch_input_len = batch_size
-
-            for batch_number in range(0, batch_input_len, batch_size):
+            for batch_number in range(0, m, batch_size):
                 input_batch = input[:, batch_number:batch_number+batch_size]
                 y_batch = y[:, batch_number:batch_number+batch_size]
                 
@@ -167,20 +169,40 @@ class MLP:
                 # modify the weights and biases
                 # add momentum
                 if momentum:
-                    dw_momentum = [dw[i] * learning_rate + dw_momentum[i] * momentum_rate for i in range(self.depth)]
-                    dw = dw_momentum
-                    
-                # add RMSprop
+                    print("momentum")
+                    momentum_gradients = [dw[i] * (1 - momentum_decay) + momentum_gradients[i] * momentum_decay for i in range(self.depth)]
+                    dw = [momentum_gradients[i] for i in range(self.depth)]
+                elif rms_prop:
+                    squared_gradients = [squared_gradient_decay * squared_gradients[i] + (1 - squared_gradient_decay) * squared_gradients[i] ** 2 for i in range(self.depth)]
+                    dw = [dw[i] / np.sqrt(squared_gradients[i]) for i in range(self.depth)]
+                elif adam:
+                    momentum_gradients = [dw[i] * (1 - momentum_decay) + momentum_gradients[i] * momentum_decay for i in range(self.depth)]
+                    squared_gradients = [squared_gradient_decay * squared_gradients[i] + (1 - squared_gradient_decay) * squared_gradients[i] ** 2 for i in range(self.depth)]
 
-                if rms_prop:
-                    dw_rms = [rms_rate * dw_rms[i] + (1 - rms_rate) * dw[i] ** 2 for i in range(self.depth)]
-                    dw = [dw[i] / np.sqrt(dw_rms[i]) for i in range(self.depth)]
+                    counter += 1
+
+                    # bias correction
+                    corrected_momentum_gradients = [momentum_gradients[i] / (1 - momentum_decay**counter) for i in range(self.depth)]
+                    corrected_squared_gradients = [squared_gradients[i] / (1 - squared_gradient_decay**counter) for i in range(self.depth)]
+
+                    dw = [corrected_momentum_gradients[i] / (np.sqrt(corrected_squared_gradients[i]) + epsilon) for i in range(self.depth)]
                 
+                
+                #print("dw: ", [dw[i].mean() for i in range(self.depth)])
+
+                dw = [dw[i] * learning_rate for i in range(self.depth)]                
                 db = [db[i] * learning_rate for i in range(self.depth)]
+
                 
                 self.update_params(dw, db)
+
+            loss = self.loss(input, y)
+            losses.append(loss)
+            if loss < early_loss_stop:
+                print("Early stop at epoch: ", epoch)
+                print("Loss for training set:", loss)
+                return losses
                 
-            losses.append(self.loss(input, y))
             if epoch % 100 == 0:
                 print(f"Epoch: {epoch}, Loss: {self.loss(input, y)}")
         return losses
