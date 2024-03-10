@@ -148,8 +148,11 @@ class FCLayer(Layer):
     
     def backward_propagation(self, upstream_gradient):
 
-        self.dZ = upstream_gradient * self.activation_prime(self.get_linear_output())
-
+        if self.activation != softmax and self.activation != linear:
+            self.dZ = upstream_gradient * self.activation_prime(self.get_linear_output())
+        else:
+            self.dZ = upstream_gradient
+        
         try:
             db = np.sum(self.dZ, axis=1, keepdims=True)
         except:

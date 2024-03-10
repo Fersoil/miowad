@@ -537,40 +537,44 @@ import matplotlib.pyplot as plt
 np.random.seed(42)
 
 
-X = np.linspace(-1,1,4).reshape(1,4)
+
+data_dir = Path("data")
+easy_train = pd.read_csv(data_dir / "classification" / "easy-training.csv")
+easy_test = pd.read_csv(data_dir / "classification" / "easy-test.csv")
 
 
+norm = networks.assets.Normalizator(easy_train[["x", "y"]])
 
-y = 2*X**2
+train = norm(easy_train[["x", "y"]])
+y_train = easy_train.c.values.reshape(-1, 1)
+test = norm(easy_test[['x', 'y']])
+y_test = easy_test.c.values.reshape(-1, 1)
 
+
+max_epochs = 500
 
 
 dnn = Deep_Neural_Network()
-dnn.create(1,1,[2, 2],'regression')
+dnn.create(1,2,[2],'classification')
 
 
 layers = [
     {"output_dim": 2, "activation": "relu", "init": "normal"},
-    {"output_dim": 2, "activation": "relu", "init": "he"},
-    {"activation": "linear"}
+    {"output_dim": 2, "activation": "softmax"}
 ]
-
-mlp = networks.MLP(layers, input=X)
-
-for i, layer in enumerate(mlp.layers):
-    layer.plot_weights()
-#     dnn.W[i+1] = layer.weights
-#     dnn.b[i+1] = layer.bias
 
 
 print(dnn.W)
 
-dnn.train(X,y,X,y,learning_rate=0.01,epochs=1000,mini_batch_size=32)
+y = dnn.to_one_hot(y_train)
 
 
-y_hat = dnn.predict(X)
-plt.scatter(X,y)
-plt.scatter(X,y_hat, c="red")
+dnn.train(train,y_train,train,y_train,learning_rate=0.01,epochs=max_epochs,mini_batch_size=32)
+
+y_hat = dnn.predict(test)
+y_hat = np.argmax(y_hat, axis=0)
+plt.scatter(test.x, test.y, c=y_hat)
+
 plt.show()
 
 

@@ -3,6 +3,7 @@ from .layers import FCLayer
 from .losses import MSE, CrossEntropy
 import matplotlib.pyplot as plt
 import pandas as pd
+from .assets import one_hot
 
 
 class MLP:
@@ -102,17 +103,27 @@ class MLP:
         return output
     
     def calculate_loss(self, input, y, output = None):
+        if self.output_type == "classification" and y.shape[0] == 1:
+            y = one_hot(y, self.layers[-1].output_dim)
+
         if output is None:
             output = self.full_forward_pass(input)
 
         return self.loss.calculate_loss(y, output)
 
 
-    def Fscore(self, y_pred, y_true):
+    def Fscore(self, y_pred, y_true, apply_one_hot_encoding = False):
         """
         F-score is the harmonic mean of precision and recall. 
         The F-score is the balance between precision and recall.
+        inputs should be one hot encoded
         """
+        assert y_pred.shape == y_true.shape, "The shapes of the predicted and true values do not match"
+        if apply_one_hot_encoding:
+            y_pred = one_hot(y_pred, self.layers[-1].output_dim)
+            y_true = one_hot(y_true, self.layers[-1].output_dim)
+
+        assert y_pred.shape[0] == self.layers[-1].output_dim, "The number of classes in the one-hot encoded vectors does not match the number of classes in the output layer"
         true_positives = np.sum(y_true * y_pred)
         false_positives = np.sum((1 - y_true) * y_pred)
         false_negatives = np.sum(y_true * (1 - y_pred))
@@ -149,23 +160,13 @@ class MLP:
         
 
         num_of_iterations = self.depth
-        if self.output_type == "classification" and self.layers[-1].activation.__name__ == "softmax":
+        #if self.output_type == "classification" and self.layers[-1].activation.__name__ == "softmax":
             # omit calculating the gradient of the softmax layer
-            num_of_iterations -= 1
-            y = self.one_hot(y, self.layers[-1].output_dim)
-            g = self.loss.calculate_output_layer_prime(y, y_hat)  
+            #y = one_hot(y, self.layers[-1].output_dim)
+            
+        g =  (y_hat - y) / y.shape[1] # self.loss.calculate_loss_prime(y, y_hat) # gradient of the loss function
 
-            db = np.sum(g, axis=1, keepdims=True) 
-            dw = np.matmul(g, self.layers[-1].get_input().T)
-
-            db_table[-1] = db
-            dw_table[-1] = dw
-
-            g = -np.matmul(self.layers[-1].weights.T, g)
-
-        else:
-            g = self.loss.calculate_loss_prime(y, y_hat) # gradient of the loss function
-
+        
         
         if verbose:
             print("g mean: ", g.mean())
@@ -189,16 +190,7 @@ class MLP:
 
         return dw_table, db_table
     
-    def one_hot(self, y, num_classes):
-
-        y = y.astype(int)
-
-        #return pd.get_dummies(y.flatten()).values.T
-
-        one_hot = np.zeros((num_classes, y.shape[1]))
-        for i in range(y.shape[0]):
-            one_hot[y[0, i], i] = 1
-        return one_hot
+    
     
     def update_params(self, dw_table, db_table):
         
@@ -218,6 +210,11 @@ class MLP:
             input = np.array(input)
         if not isinstance(y, np.ndarray):
             y = np.array(y)
+
+        if self.output_type == "classification":
+            y = one_hot(y, self.layers[-1].output_dim)
+            if input_test is not None and y_test is not None:
+                y_test = one_hot(y_test, self.layers[-1].output_dim)
 
 
         validation = False

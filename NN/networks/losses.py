@@ -1,4 +1,5 @@
 import numpy as np
+from .assets import one_hot
 
 class Loss:
     def __init__(self):
@@ -36,6 +37,11 @@ class CrossEntropy(Loss):
         super().__init__()
     
     def calculate_loss(self, y_true, y_pred):
+        # assumes y_true and y_pred are one-hot encoded, y_pred is softmax output
+        # return -np.log(y_pred[np.where(y_true)])
+
+        assert y_true.shape == y_pred.shape, "Error while calculating cross entropy loss, y_true and y_pred shapes do not match."
+
 
         eps = 1e-10
 
@@ -43,7 +49,7 @@ class CrossEntropy(Loss):
         y_true = np.array(y_true)
         batch_size = y_true.shape[1]
 
-        return -np.sum(y_true * np.log(y_pred)) / batch_size
+        return np.sum(-y_true * np.log(y_pred)) / batch_size
     
     def calculate_loss_prime(self, y_true, y_pred):
         y_true = np.array(y_true)
