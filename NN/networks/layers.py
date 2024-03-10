@@ -1,6 +1,7 @@
 import numpy as np
-from .activations import relu, sigmoid, linear, prelu, tanh, relu_prime, sigmoid_prime, linear_prime, tanh_prime, prelu_prime
+from .activations import relu, sigmoid, linear, prelu, tanh, relu_prime, sigmoid_prime, linear_prime, tanh_prime, prelu_prime, softmax, softmax_prime
 import matplotlib.pyplot as plt
+import pandas as pd
 
 class Layer:
     def __init__(self):
@@ -46,6 +47,10 @@ class FCLayer(Layer):
                 self.activation = tanh
             elif activation == "linear":
                 self.activation = linear
+            elif activation == "prelu":
+                self.activation = prelu
+            elif activation == "softmax":
+                self.activation = softmax
             else:
                 raise ValueError("Activation function not supported")
             
@@ -60,6 +65,8 @@ class FCLayer(Layer):
                 self.activation_prime = tanh_prime
             elif activation == "prelu":
                 self.activation_prime = prelu_prime
+            elif activation == "softmax":
+                self.activation_prime = softmax_prime
             else:
                 raise ValueError("Activation function not supported")
 
@@ -125,13 +132,16 @@ class FCLayer(Layer):
 
     
     def forward_pass_without_activation(self, input):
-        self.input = input
 
+    
+        self.input = input
+        
         self.linear_output = np.matmul(self.weights,  input) + self.bias
         return self.linear_output
 
 
     def forward_pass(self, input):
+
         self.batch_size = input.shape[1]
         self.output = self.activation(self.forward_pass_without_activation(input))
         return self.output
@@ -140,8 +150,13 @@ class FCLayer(Layer):
 
         self.dZ = upstream_gradient * self.activation_prime(self.get_linear_output())
 
-        db = np.sum(self.dZ, axis=1, keepdims=True) #/ float(self.batch_size)
+        try:
+            db = np.sum(self.dZ, axis=1, keepdims=True)
+        except:
+            db = np.sum(self.dZ, axis=1)
+        # db = np.sum(self.dZ, axis=1, keepdims=True) this line threw an error - but the keepdims parameter looks like not necessary
         dw = np.matmul(self.dZ, self.get_input().T) #/ float(self.batch_size)
+
 
         # print("input shape ", self.get_input().shape)
 
