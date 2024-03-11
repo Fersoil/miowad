@@ -28,6 +28,12 @@ class MSE(Loss):
 
         return 2 * (y_pred - y_true) / batch_size
     
+    def calculate_output_layer_prime(self, y_true, y_pred):
+        y_true = np.array(y_true)
+        batch_size = y_true.shape[1]
+
+        return 2 * (y_pred - y_true) / batch_size
+    
     def __str__(self):
         return "Mean Squared Error Loss"
     
@@ -41,7 +47,6 @@ class CrossEntropy(Loss):
         # return -np.log(y_pred[np.where(y_true)])
 
         assert y_true.shape == y_pred.shape, "Error while calculating cross entropy loss, y_true and y_pred shapes do not match."
-
 
         eps = 1e-10
 

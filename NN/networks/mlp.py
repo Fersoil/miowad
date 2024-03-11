@@ -4,12 +4,13 @@ from .losses import MSE, CrossEntropy
 import matplotlib.pyplot as plt
 import pandas as pd
 from .assets import one_hot
+from .regularizations import L1, L2, NoneReg
 
 
 class MLP:
-    __slots__ = ["layers", "depth", "loss", "output_type"]
+    __slots__ = ["layers", "depth", "loss", "output_type", "output_dim", "regularization"]
 
-    def __init__(self, init_layers, input, output_type="regression", weights=None, biases=None):
+    def __init__(self, init_layers, input, output_type="regression", regularization = "l2", regularization_alpha = 0.01, weights=None, biases=None, verbose = False):
             """
             Initialize the Multi-Layer Perceptron (MLP) network.
 
@@ -21,6 +22,8 @@ class MLP:
                         - "activation" (str): The activation function to be used in the layer.
                 input (array-like): The input data for the network.
                 output_type (str, optional): The type of the output. Defaults to "regression". Possible values are "regression" or "classification".
+                regularization (str, optional): The type of regularization to be used. Defaults to "l2". Possible values are "l1", "l2" or None.
+                regularization_alpha (float, optional): The regularization parameter. Defaults to 0.01.
                 weights (array-like, optional): The initial weights for the network. If not provided, the weights will be randomly initialized.
                 biases (array-like, optional): The initial biases for the network. If not provided, the biases will be randomly initialized.
                 seed (int, optional): The seed value for numpy.random. Defaults to 42.
@@ -34,6 +37,15 @@ class MLP:
             self.layers = []
 
             self.output_type = output_type
+
+            if regularization == "l1":
+                self.regularization = L1(regularization_alpha)
+            elif regularization == "l2":
+                self.regularization = L2(regularization_alpha)
+            elif regularization is None:
+                self.regularization = NoneReg()
+            else:
+                raise ValueError("Regularization type not recognized")
 
             if output_type == "regression":
                 if init_layers[-1].get("activation") == "softmax":
@@ -57,10 +69,12 @@ class MLP:
                     input_dim = init_layers[i-1]["output_dim"]
                 
                 if i == len(init_layers) - 1 and output_type == "regression":
-                    print("Output dimension for the output layer is set to 1")
+                    if verbose:
+                        print("Output dimension for the output layer is set to 1")
                     output_dim = 1 # only one dim output is allowed for the output layer
                 else:
                     output_dim = init_layer.get("output_dim")
+                    self.output_dim = output_dim
                 if output_dim is None:
                     raise ValueError("Output dimension not specified for layer {}, softmax layers needs number outout_dim to be the number of classes".format(i))
                 
@@ -74,12 +88,14 @@ class MLP:
                 
                 if weights is not None and biases is not None:
                     try:
-                        print(f"initializing layer {i} using predefined weights and biases")
+                        if verbose:
+                            print(f"initializing layer {i} using predefined weights and biases")
                         layer = FCLayer(input_dim, output_dim, activation, weights[i], biases[i], )
                     except IndexError:
                         raise ValueError("The number of weights and biases provided does not match the number of layers")
                 else:
-                    print(f"initializing layer {i} using {init_method} initialization")
+                    if verbose:
+                        print(f"initializing layer {i} using {init_method} initialization")
                     layer = FCLayer(input_dim, output_dim, activation=activation, init=init_method)
                 self.layers.append(layer)
 
@@ -104,12 +120,14 @@ class MLP:
     
     def calculate_loss(self, input, y, output = None):
         if self.output_type == "classification" and y.shape[0] == 1:
-            y = one_hot(y, self.layers[-1].output_dim)
+            y = one_hot(y, self.output_dim)
 
         if output is None:
             output = self.full_forward_pass(input)
 
-        return self.loss.calculate_loss(y, output)
+        reg_loss = np.sum([self.regularization.loss(layer.weights) for layer in self.layers])
+
+        return self.loss.calculate_loss(y, output) + reg_loss
 
 
     def Fscore(self, y_pred, y_true, apply_one_hot_encoding = False):
@@ -120,10 +138,10 @@ class MLP:
         """
         assert y_pred.shape == y_true.shape, "The shapes of the predicted and true values do not match"
         if apply_one_hot_encoding:
-            y_pred = one_hot(y_pred, self.layers[-1].output_dim)
-            y_true = one_hot(y_true, self.layers[-1].output_dim)
+            y_pred = one_hot(y_pred, self.output_dim)
+            y_true = one_hot(y_true, self.output_dim)
 
-        assert y_pred.shape[0] == self.layers[-1].output_dim, "The number of classes in the one-hot encoded vectors does not match the number of classes in the output layer"
+        assert y_pred.shape[0] == self.output_dim, "The number of classes in the one-hot encoded vectors does not match the number of classes in the output layer"
         true_positives = np.sum(y_true * y_pred)
         false_positives = np.sum((1 - y_true) * y_pred)
         false_negatives = np.sum(y_true * (1 - y_pred))
@@ -164,46 +182,56 @@ class MLP:
             # omit calculating the gradient of the softmax layer
             #y = one_hot(y, self.layers[-1].output_dim)
             
-        g =  (y_hat - y) / y.shape[1] # self.loss.calculate_loss_prime(y, y_hat) # gradient of the loss function
-
+        g =  self.loss.calculate_output_layer_prime(y, y_hat) #(y_hat - y) / y.shape[1] # self.loss.calculate_loss_prime(y, y_hat) # gradient of the loss function
         
-        
-        if verbose:
-            print("g mean: ", g.mean())
 
         for i in reversed(range(num_of_iterations)):
-            # print("shape of g: ", g.shape)
 
             dw, db, g = self.layers[i].backward_propagation(g)
+
+            dw = dw + self.regularization.grad_loss(self.layers[i].weights)
             
-            # print("shape of g: ", g.shape)
-            # print("shape of dw: ", dw.shape)
-            # print("shape of db: ", db.shape)
-            # print("shape of weights: ", self.layers[i].weights.shape)
-            # print("shape of biases: ", self.layers[i].bias.shape)
-
-            # update params
-            # self.layers[i].update_params(dw, db, learning_rate = learning_rate, momentum_rate = momentum_rate, gamma = gamma, epsilon = epsilon)
-
             db_table[i] = db
             dw_table[i] = dw
+
 
         return dw_table, db_table
     
     
     
     def update_params(self, dw_table, db_table):
-        
-        # add regularization
-        
+            
         for i in range(self.depth):
             self.layers[i].update_params(dw_table[i], db_table[i])
     
 
-    def train(self, input, y, input_test = None, y_test = None, max_epochs = 100, batch_size = 32, learning_rate = 0.01, stochastic_descent = False, momentum = False, 
-              momentum_decay = 0.9, rms_prop = False, squared_gradient_decay = 0.99, adam = False, epsilon=1e-8, early_loss_stop = 1e-5, plot_losses = True):
+    def train(self, input, y, input_val = None, y_val = None, max_epochs = 100, batch_size = 32, learning_rate = 0.01, stochastic_descent = False, momentum = False, 
+              momentum_decay = 0.9, rms_prop = False, squared_gradient_decay = 0.99, adam = False, epsilon=1e-8, early_loss_stop = 1e-5, verbose=True, plot_losses = True):
         """
-        trains a neural network, returns a list of losses for each epoch, a wrapper function
+                Trains the MLP network using the given input and target values.
+
+        Parameters:
+        - input (ndarray): The input values for training the network. Should be in the shape (n, m) where n is the number of features and m is the number of samples.
+        - y (ndarray): The target values for training the network. Should be in the shape (1, m) for regression problems or (n, m) for classification problems with n being the number of classes.
+        - input_val (ndarray, optional): The input values from the validation dataset to measure performance of the network. Default is None - no validation is being done.
+        - y_val (ndarray, optional): The target values from the validation dataset to measure performance of the the network. Default is None - no validation is being done.
+        - max_epochs (int, optional): The maximum number of epochs to train the network. Default is 100.
+        - batch_size (int, optional): The batch size for gradient descent. Default is 32.
+        - learning_rate (float, optional): The learning rate for updating the network weights. Default is 0.01.
+        - stochastic_descent (bool, optional): Whether to use stochastic gradient descent. Default is False.
+        - momentum (bool, optional): Whether to use momentum optimization. Default is False.
+        - momentum_decay (float, optional): The decay rate for momentum optimization. Default is 0.9.
+        - rms_prop (bool, optional): Whether to use RMSprop optimization. Default is False.
+        - squared_gradient_decay (float, optional): The decay rate for squared gradient in RMSprop optimization. Default is 0.99.
+        - adam (bool, optional): Whether to use Adam optimization. Default is False.
+        - epsilon (float, optional): A small value to avoid division by zero in Adam and RMSprop optimization. Default is 1e-8.
+        - early_loss_stop (float, optional): The threshold for early stopping based on loss from validation dataset. Default is 1e-5.
+        - verbose (bool, optional): Whether to print training progress. Default is True.
+        - plot_losses (bool, optional): Whether to plot the training and validation losses. Default is True.
+
+        Returns:
+        - losses (list): The training losses for each epoch.
+
         """
 
         if not isinstance(input, np.ndarray):
@@ -212,18 +240,18 @@ class MLP:
             y = np.array(y)
 
         if self.output_type == "classification":
-            y = one_hot(y, self.layers[-1].output_dim)
-            if input_test is not None and y_test is not None:
-                y_test = one_hot(y_test, self.layers[-1].output_dim)
+            y = one_hot(y, self.output_dim)
+            if input_val is not None and y_val is not None:
+                y_val = one_hot(y_val, self.output_dim)
 
 
         validation = False
-        if input_test is not None and y_test is not None:
+        if input_val is not None and y_val is not None:
             validation = True
-            if not isinstance(input_test, np.ndarray):
-                input_test = np.array(input_test)
-            if not isinstance(y_test, np.ndarray):
-                y_test = np.array(y_test)
+            if not isinstance(input_val, np.ndarray):
+                input_val = np.array(input_val)
+            if not isinstance(y_val, np.ndarray):
+                y_val = np.array(y_val)
 
         losses = []
         test_losses = []
@@ -248,8 +276,7 @@ class MLP:
                 
                 dw, db = self.full_backward_propagation(input_batch, y_batch)
                 
-                # modify the weights and biases
-                # add momentum
+
                 if momentum:
                     momentum_gradients = [dw[i] * (1 - momentum_decay) + momentum_gradients[i] * momentum_decay for i in range(self.depth)]
                     dw = [momentum_gradients[i] for i in range(self.depth)]
@@ -269,8 +296,6 @@ class MLP:
                     dw = [corrected_momentum_gradients[i] / (np.sqrt(corrected_squared_gradients[i]) + epsilon) for i in range(self.depth)]
                 
                 
-                #print("dw: ", [dw[i].mean() for i in range(self.depth)])
-
                 dw = [dw[i] * learning_rate for i in range(self.depth)]                
                 db = [db[i] * learning_rate for i in range(self.depth)]
 
@@ -279,28 +304,32 @@ class MLP:
 
             loss = self.calculate_loss(input, y)
             if validation:
-                test_loss = self.calculate_loss(input_test, y_test)
+                test_loss = self.calculate_loss(input_val, y_val)
                 test_losses.append(test_loss)
 
-            if epoch % 100 == 0:
+                if test_loss < early_loss_stop:
+                    print("Early stop at epoch: ", epoch)
+                    print("Loss for training set:", loss)
+                    print("Loss for validation set:", test_loss)
+                    return losses
+
+            if verbose and epoch % 100 == 0:
                 print(f"Epoch: {epoch}, Loss: {self.calculate_loss(input, y)}")
                 if validation:
-                    print(f"Test Loss: {self.calculate_loss(input_test, y_test)}")
+                    print(f"Validation Loss: {self.calculate_loss(input_val, y_val)}")
 
-            
             losses.append(loss)
             
-            if loss < early_loss_stop:
-                print("Early stop at epoch: ", epoch)
-                print("Loss for training set:", loss)
-                return losses
-                
             
         if plot_losses:
             plt.figure(figsize=(10, 6))
             plt.plot(losses, label="training set")
             if validation:
                 plt.plot(test_losses, c="red", label="validation set")
+            plt.xlabel("Epoch")
+            plt.ylabel("Loss")
+            plt.legend()
+            plt.show() 
 
         return losses
            

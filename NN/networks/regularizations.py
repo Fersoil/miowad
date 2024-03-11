@@ -1,11 +1,9 @@
 from abc import ABC, abstractmethod
 import numpy as np
 
-class Regularization(ABC):   
-    
-    @abstractmethod
-    def apply(self, data):
-        pass
+class Regularization(ABC): 
+    def __init__(self) -> None:
+        super().__init__()
     
     def loss(self, weights):
         raise NotImplementedError("The loss function has not been implemented")
@@ -25,7 +23,7 @@ class NoneReg(Regularization):
         return 0
     
     def grad_loss(self, weights):
-        return [np.zeros_like(w) for w in weights]
+        return np.zeros_like(weights)
     
 
 class L1(Regularization):
