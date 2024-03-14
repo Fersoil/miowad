@@ -169,7 +169,6 @@ class MLP:
 
         y_hat = self.full_forward_pass(input) # forward pass automatically stores the output in the layers
         
-        batch_size = input.shape[1]
         if verbose:
             print("y_hat: ", input.shape, y_hat.shape, y.shape)
         
@@ -178,11 +177,8 @@ class MLP:
         
 
         num_of_iterations = self.depth
-        #if self.output_type == "classification" and self.layers[-1].activation.__name__ == "softmax":
-            # omit calculating the gradient of the softmax layer
-            #y = one_hot(y, self.layers[-1].output_dim)
             
-        g =  self.loss.calculate_output_layer_prime(y, y_hat) #(y_hat - y) / y.shape[1] # self.loss.calculate_loss_prime(y, y_hat) # gradient of the loss function
+        g =  self.loss.calculate_output_layer_prime(y, y_hat)
         
 
         for i in reversed(range(num_of_iterations)):
@@ -200,13 +196,14 @@ class MLP:
     
     
     def update_params(self, dw_table, db_table):
+        """function updates parameters of the network using the given already rescaled with learning rate and using optimization algorithm gradients"""
             
         for i in range(self.depth):
             self.layers[i].update_params(dw_table[i], db_table[i])
     
 
     def train(self, input, y, input_val = None, y_val = None, max_epochs = 100, batch_size = 32, learning_rate = 0.01, stochastic_descent = False, momentum = False, 
-              momentum_decay = 0.9, rms_prop = False, squared_gradient_decay = 0.99, adam = False, epsilon=1e-8, early_loss_stop = 1e-5, verbose=True, plot_losses = True):
+              momentum_decay = 0.9, rms_prop = False, squared_gradient_decay = 0.99, adam = False, epsilon=1e-8, early_stopping = True, min_stopping_delta = 1e-5, patience = 5, verbose=True, plot_losses = True):
         """
                 Trains the MLP network using the given input and target values.
 
@@ -225,7 +222,9 @@ class MLP:
         - squared_gradient_decay (float, optional): The decay rate for squared gradient in RMSprop optimization. Default is 0.99.
         - adam (bool, optional): Whether to use Adam optimization. Default is False.
         - epsilon (float, optional): A small value to avoid division by zero in Adam and RMSprop optimization. Default is 1e-8.
-        - early_loss_stop (float, optional): The threshold for early stopping based on loss from validation dataset. Default is 1e-5.
+        - early_stopping (bool, optional): Whether to use early stopping based on loss from validation dataset. Default is True.
+        - min_stopping_delta (float, optional): The threshold for early stopping based on loss from validation dataset. Default is 1e-5.
+        - patience (int, optional): The number of epochs to wait before stopping the training if the loss from the validation dataset does not improve. Default is 5.
         - verbose (bool, optional): Whether to print training progress. Default is True.
         - plot_losses (bool, optional): Whether to plot the training and validation losses. Default is True.
 
@@ -239,10 +238,25 @@ class MLP:
         if not isinstance(y, np.ndarray):
             y = np.array(y)
 
+        assert input.shape[0] == self.layers[0].input_dim, f"The input data should have {self.layers[0].input_dim} features, but {input.shape[0]} were given."
+
+        assert max_epochs > 0 and isinstance(max_epochs, int), "The maximum number of epochs should be a positive integer."
+        assert batch_size > 0 and isinstance(batch_size, int), "The batch size should be a positive integer."
+        
+
+        assert self.output_type == "regression" or self.output_type == "classification", "The output type should be either 'regression' or 'classification'."
+
         if self.output_type == "classification":
-            y = one_hot(y, self.output_dim)
+            if y.shape[0] == 1:
+                y = one_hot(y, self.output_dim)
+            else:
+                assert y.shape[0] == self.output_dim, f"The target values should have {self.output_dim} classes, but {y.shape[0]} were given."
             if input_val is not None and y_val is not None:
                 y_val = one_hot(y_val, self.output_dim)
+
+        elif self.output_type == "regression":
+            assert y.shape[0] == self.layers[-1].output_dim, f"The target values should have {self.layers[-1].output_dim} classes, but {y.shape[0]} were given."
+
 
 
         validation = False
@@ -253,6 +267,9 @@ class MLP:
             if not isinstance(y_val, np.ndarray):
                 y_val = np.array(y_val)
 
+        assert patience >= 0,  "The patience parameter should be non-negative."
+        assert isinstance(patience, int), "The patience parameter should be an integer"
+        
         losses = []
         test_losses = []
         counter = 0
@@ -305,13 +322,19 @@ class MLP:
             loss = self.calculate_loss(input, y)
             if validation:
                 test_loss = self.calculate_loss(input_val, y_val)
-                test_losses.append(test_loss)
+                if early_stopping:
+                    if test_loss > test_losses[-1] - min_stopping_delta:
+                        if verbose:
+                            print("No observed enough improvement in the validation loss, waiting for ", patience - counter, " epochs. Validation loss difference: ", test_loss - test_losses[-1])
 
-                if test_loss < early_loss_stop:
-                    print("Early stop at epoch: ", epoch)
-                    print("Loss for training set:", loss)
-                    print("Loss for validation set:", test_loss)
-                    return losses
+                        counter += 1
+                        if counter == patience:
+                            if verbose:
+                                print(f"Early stopping, no observed enough improvement after {patience} epochs in the validation loss.")
+                            return losses
+                    counter = 0
+
+                test_losses.append(test_loss)
 
             if verbose and epoch % 100 == 0:
                 print(f"Epoch: {epoch}, Loss: {self.calculate_loss(input, y)}")
