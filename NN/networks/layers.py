@@ -17,6 +17,8 @@ class Layer:
     
 
 class FCLayer(Layer):
+    """ class represents a fully connected layer in a neural network with different activation functions """
+
     __slots__ = ["input_dim", "output_dim", "activation", "weights", "bias", "output", "linear_output", "input", "dZ"]
     
     
@@ -38,37 +40,28 @@ class FCLayer(Layer):
             super().__init__()
             self.input_dim = input_dim
             self.output_dim = output_dim
-    
+
+            assert activation in ["sigmoid", "relu", "tanh", "linear", "prelu", "softmax"], "Activation function not supported"
+            assert init in ["uniform", "xavier", "he", "normal", None], "Initialization method not supported"
+
             if activation == "sigmoid":
                 self.activation = sigmoid
+                self.activation_prime = sigmoid_prime
             elif activation == "relu":
                 self.activation = relu
+                self.activation_prime = relu_prime
             elif activation == "tanh":
                 self.activation = tanh
+                self.activation_prime = tanh_prime
             elif activation == "linear":
                 self.activation = linear
+                self.activation_prime = linear_prime
             elif activation == "prelu":
                 self.activation = prelu
-            elif activation == "softmax":
-                self.activation = softmax
-            else:
-                raise ValueError("Activation function not supported")
-            
-            # derivative
-            if activation == "relu":
-                self.activation_prime = relu_prime
-            elif activation == "sigmoid":
-                self.activation_prime = sigmoid_prime
-            elif activation == "linear":
-                self.activation_prime = linear_prime
-            elif activation == "tanh":
-                self.activation_prime = tanh_prime
-            elif activation == "prelu":
                 self.activation_prime = prelu_prime
             elif activation == "softmax":
+                self.activation = softmax
                 self.activation_prime = softmax_prime
-            else:
-                raise ValueError("Activation function not supported")
 
             if init is None:
                 if weights is not None and biases is not None:
@@ -81,17 +74,16 @@ class FCLayer(Layer):
                     self.weights = weights
                     self.bias = biases
                 else:
-                    raise ValueError("The weights and biases must be provided if the initialization method is None")
-            if init == "uniform":
-                self.random_init_weights()
+                    raise ValueError("The weights and biases must be provided if the initialization method is None")    
+            
+            elif init == "uniform":
+                self.uniform_init_weights()
             elif init == "xavier":
                 self.xavier_init_weights()
             elif init == "he":
                 self.he_init_weights()
             elif init == "normal":
                 self.normal_init_weights()
-            else: 
-                raise ValueError("Initialization method not supported")
                 
             self.bias_change = None
             self.weights_change = None
@@ -102,7 +94,10 @@ class FCLayer(Layer):
         return "Fully connected layer with input dimension {} and output dimension {} and {} activation function".format(self.input_dim, self.output_dim, self.activation.__name__)
 
     # initialize weights and biases
-    def random_init_weights(self):
+    def uniform_init_weights(self):
+        """
+        uniform initialization
+        """
         self.weights = np.random.uniform(0, 1, (self.output_dim, self.input_dim))
         self.bias = np.zeros((self.output_dim, 1))
 
@@ -131,9 +126,7 @@ class FCLayer(Layer):
         self.bias = np.zeros((self.output_dim, 1))
 
     
-    def forward_pass_without_activation(self, input):
-
-    
+    def forward_pass_without_activation(self, input):    
         self.input = input
         
         self.linear_output = np.matmul(self.weights,  input) + self.bias
@@ -141,7 +134,6 @@ class FCLayer(Layer):
 
 
     def forward_pass(self, input):
-
         self.batch_size = input.shape[1]
         self.output = self.activation(self.forward_pass_without_activation(input))
         return self.output
@@ -158,23 +150,18 @@ class FCLayer(Layer):
         except:
             db = np.sum(self.dZ, axis=1)
         # db = np.sum(self.dZ, axis=1, keepdims=True) this line threw an error - but the keepdims parameter looks like not necessary
-        dw = np.matmul(self.dZ, self.get_input().T) #/ float(self.batch_size)
+        dw = np.matmul(self.dZ, self.get_input().T)
 
-
-        # print("input shape ", self.get_input().shape)
-
-        g = np.matmul(self.weights.T, self.dZ) # * self.activation_prime(self.get_linear_output())
+        g = np.matmul(self.weights.T, self.dZ) 
 
         self.input = None
         self.output = None
         self.linear_output = None
 
         return dw, db, g
-    
 
 
     # getters for temporary variables
-
     def get_weights(self):
         return self.weights
     
@@ -200,7 +187,7 @@ class FCLayer(Layer):
     
     def get_batch_size(self):
         if self.batch_size is None:
-            return self.get_input().shape[1]
+            self.batch_size = self.get_input().shape[1]
         return self.batch_size
     
     
@@ -218,8 +205,6 @@ class FCLayer(Layer):
         plt.show()       
         
 
-    
-        
     def update_params(self, dw: np.ndarray, db: np.ndarray):
         """function updates parameters of a single layer in a neural network
 
@@ -227,6 +212,9 @@ class FCLayer(Layer):
             dw (np.ndarray): array of derivatives of the loss function with respect to the weights
             db (np.ndarray): array of derivatives of the loss function with respect to the biases
         """
+
+        assert dw.shape == self.weights.shape, f"weights gradient shape {dw.shape} does not match weights shape {self.weights.shape}"
+        assert db.shape == self.bias.shape, f"bias gradient shape {db.shape} does not match bias shape {self.bias.shape}"
         
         self.weights = self.weights - dw
         self.bias = self.bias - db

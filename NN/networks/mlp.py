@@ -2,7 +2,6 @@ import numpy as np
 from .layers import FCLayer
 from .losses import MSE, CrossEntropy
 import matplotlib.pyplot as plt
-import pandas as pd
 from .assets import one_hot
 from .regularizations import L1, L2, NoneReg
 
@@ -26,7 +25,7 @@ class MLP:
                 regularization_alpha (float, optional): The regularization parameter. Defaults to 0.01.
                 weights (array-like, optional): The initial weights for the network. If not provided, the weights will be randomly initialized.
                 biases (array-like, optional): The initial biases for the network. If not provided, the biases will be randomly initialized.
-                seed (int, optional): The seed value for numpy.random. Defaults to 42.
+                verbose (boolean, optional): Whether to print additional information. Defaults to False.
             """
 
             if input.ndim == 1:
@@ -106,6 +105,33 @@ class MLP:
         for layer in self.layers:
             description += str(layer) + "\n"
         return description
+    
+    def save_weights(self):
+        """
+        saves weights and biases of network, returns it as two lists
+        """
+        weights = []
+        biases = []
+        for layer in self.layers:
+            weights.append(layer.weights)
+            biases.append(layer.bias)
+
+        return weights, biases
+    
+    def load_weights(self, weights, biases):
+        """
+        loads the weights and biases, the input should be two lists with weights and bias of each layer
+        """
+        depth = len(weights)
+        assert depth == len(biases) and depth == self.depth, "depth of the given weights is incorrect"
+
+        for i in range(depth):
+            assert self.layers[i].weights.shape == weights[i].shape, f"incorrect weights shape for layer number {i}"
+            assert self.layers[i].bias.shape == biases[i].shape, f"incorrect bias shape for layer number {i}"
+
+            self.layers[i].weights = weights[i]
+            self.layers[i].bias = biases[i]
+
 
 
     def full_forward_pass(self, input: np.ndarray):
@@ -323,7 +349,9 @@ class MLP:
             if validation:
                 test_loss = self.calculate_loss(input_val, y_val)
                 if early_stopping:
-                    if test_loss > test_losses[-1] - min_stopping_delta:
+                    if len(test_losses) > 0 and test_loss > test_losses[-1] - min_stopping_delta:
+                        # save weights 
+                        prev_weights, prev_biases = self.save_weights()
                         if verbose:
                             print("No observed enough improvement in the validation loss, waiting for ", patience - counter, " epochs. Validation loss difference: ", test_loss - test_losses[-1])
 
@@ -331,8 +359,11 @@ class MLP:
                         if counter == patience:
                             if verbose:
                                 print(f"Early stopping, no observed enough improvement after {patience} epochs in the validation loss.")
-                            return losses
-                    counter = 0
+                                print("loading the old weights")
+                            self.load_weights(prev_weights, prev_biases)
+                            return losses, test_losses
+                    else:
+                        counter = 0
 
                 test_losses.append(test_loss)
 
@@ -349,12 +380,17 @@ class MLP:
             plt.plot(losses, label="training set")
             if validation:
                 plt.plot(test_losses, c="red", label="validation set")
+
+            plt.title("Values of losses in each epochs")
             plt.xlabel("Epoch")
             plt.ylabel("Loss")
             plt.legend()
             plt.show() 
 
+        if test_losses is not None:
+            return losses, test_losses
         return losses
+    
            
     
     def get_weights(self):
