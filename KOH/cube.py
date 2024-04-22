@@ -1,0 +1,39 @@
+import numpy as np
+import pandas as pd
+from pathlib import Path
+import matplotlib.pyplot as plt
+
+from som import KohonenNetwork
+
+
+data_dir = Path("data")
+
+
+cube = pd.read_csv(data_dir / "cube.csv")
+hexagon = pd.read_csv(data_dir / "hexagon.csv")
+
+fig = plt.figure()
+ax = plt.axes(projection='3d')
+
+ax.scatter3D(cube["x"], cube["y"], cube["z"])
+plt.show()
+
+koh = KohonenNetwork(4, 10, vec_dim=3, lambda_param=1)
+
+
+koh.fit(cube[["x", "y", "z"]].values, 100)
+
+print("Finished training")
+
+reshaped_cells = koh.cells.reshape(-1, 3)
+
+fig = plt.figure()
+ax = plt.axes(projection='3d')
+ax.scatter3D(reshaped_cells[:, 0], reshaped_cells[:, 1], reshaped_cells[:, 2])
+plt.show()
+
+
+
+
+print("Finished")
+print("Cube")
