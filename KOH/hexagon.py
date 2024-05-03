@@ -14,7 +14,7 @@ hexagon = pd.read_csv(data_dir / "hexagon.csv")
 
 
 
-koh = KohonenNetwork(3, 4)
+koh = KohonenNetwork(3, 2)
 
 
 koh.fit(hexagon[["x", "y"]].values, 50)

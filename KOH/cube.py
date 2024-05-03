@@ -18,7 +18,7 @@ ax = plt.axes(projection='3d')
 ax.scatter3D(cube["x"], cube["y"], cube["z"])
 plt.show()
 
-koh = KohonenNetwork(4, 10, vec_dim=3, lambda_param=1)
+koh = KohonenNetwork(4, 2, vec_dim=3, lambda_param=1)
 
 
 koh.fit(cube[["x", "y", "z"]].values, 100)
@@ -26,14 +26,6 @@ koh.fit(cube[["x", "y", "z"]].values, 100)
 print("Finished training")
 
 reshaped_cells = koh.cells.reshape(-1, 3)
-
-fig = plt.figure()
-ax = plt.axes(projection='3d')
-ax.scatter3D(reshaped_cells[:, 0], reshaped_cells[:, 1], reshaped_cells[:, 2])
-plt.show()
-
-
-
+koh.plot_graph()
 
 print("Finished")
-print("Cube")
