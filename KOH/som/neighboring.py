@@ -20,7 +20,7 @@ class DistNeighboringFunc(NeighboringFunc):
         return np.dot(x, y)
 
     def __str__(self) -> str:
-        return "L2 distnace Neighboring Function"
+        return "L2 distance Neighboring Function"
 
 
 class GaussianNeighboringFunc(NeighboringFunc):
@@ -29,7 +29,7 @@ class GaussianNeighboringFunc(NeighboringFunc):
         self.sigma = sigma
 
     def __call__(self, x: np.ndarray, y: np.ndarray, t: int) -> np.ndarray:
-        dist = np.linalg.norm(x - y)
+        dist = np.linalg.norm(x - y) * t
         return np.exp(-(dist**2) / (self.sigma**2))
 
     def __str__(self) -> str:

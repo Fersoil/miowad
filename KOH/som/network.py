@@ -7,12 +7,13 @@ from som.neighboring import DistNeighboringFunc, GaussianNeighboringFunc, MinusO
 
 class KohonenNetwork:
     def __init__(self, M: int, N: int, neighboring_func: Literal["L2", "gaussian", "minus_one_gaussian", "mexican"] = "gaussian", 
-                 vec_dim: int = 2, lambda_param: float = 10) -> None:
+                neighboring_width: float = 1.0, vec_dim: int = 2, lambda_param: float = 10) -> None:
         
         self.M = M
         self.N = N
         self.vec_dim = vec_dim
         self.lambda_param = lambda_param
+        self.neighboring_width = neighboring_width
 
         if neighboring_func == "L2":
             self.neighboring_func = DistNeighboringFunc()
@@ -50,7 +51,7 @@ class KohonenNetwork:
     def update_cells(self, x: np.ndarray, i: int, j: int, t: int) -> None:
         for m in range(self.M):
             for n in range(self.N):
-                self.cells[m, n] += self.alpha(t) * self.neighboring_func(np.array([m, n]), np.array([i, j]), t) * (x - self.cells[m, n])
+                self.cells[m, n] += self.neighboring_width * self.alpha(t) * self.neighboring_func(np.array([m, n]), np.array([i, j]), t) * (x - self.cells[m, n])
 
 
     def alpha(self, t: int) -> float:
