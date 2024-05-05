@@ -25,7 +25,6 @@ koh.fit(cube[["x", "y", "z"]].values, 100)
 
 print("Finished training")
 
-reshaped_cells = koh.cells.reshape(-1, 3)
 koh.plot_graph()
 
 print("Finished")

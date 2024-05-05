@@ -1,1 +1,7 @@
 https://www.ijmlc.org/vol9/786-L0194.pdf
+
+https://arxiv.org/pdf/1210.5873
+
+Improving Feature Map Quality of
+SOM Based on Adjusting the
+Neighborhood Function
