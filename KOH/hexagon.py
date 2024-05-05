@@ -3,7 +3,7 @@ import pandas as pd
 from pathlib import Path
 import matplotlib.pyplot as plt
 
-from som import KohonenNetwork
+from som import KohonenNetwork, GaussianNeighboringFunc, MinusOneGaussianNeighboringFunc
 
 
 data_dir = Path("data")
@@ -14,20 +14,24 @@ hexagon = pd.read_csv(data_dir / "hexagon.csv")
 
 
 
-koh = KohonenNetwork(3, 4)
+koh = KohonenNetwork(3, 2, MinusOneGaussianNeighboringFunc(initial_neighbouring_radius=0.1), init_method="dataset", dataset=hexagon[["x", "y"]].values)    
+
+plt.scatter(hexagon["x"], hexagon["y"], c=hexagon["c"])
+plt.title("Initial weights of Kohonen Network")
+koh.plot_graph()
 
 
-koh.fit(hexagon[["x", "y"]].values, 50)
+koh.fit(hexagon[["x", "y"]].values, 100)
 
 print("Finished training")
 
-reshaped_cells = koh.cells.reshape(-1, 2)
+labels = koh.predict(hexagon[["x", "y"]].values)
 
-plt.scatter(reshaped_cells[:, 0], reshaped_cells[:, 1])
+
+plt.scatter(hexagon["x"], hexagon["y"], c=labels)
+plt.title("Clustering with Kohonen Network")
+koh.plot_graph()
 plt.show()
 
 
-
-
 print("Finished")
-print("Cube")
