@@ -3,13 +3,15 @@ from typing import Literal
 import networkx as nx
 import matplotlib.pyplot as plt
 
+import seaborn as sns
+
 
 from som.neighboring import NeighboringFunc, DistNeighboringFunc, GaussianNeighboringFunc, MinusOneGaussianNeighboringFunc, MexicanSombreroNeighboringFunc
 
 
 class KohonenNetwork:
     def __init__(self, M: int, N: int, neighboring_func: NeighboringFunc = GaussianNeighboringFunc(), grid: Literal["rectangular", "hexagonal"]="rectangular",
-                init_method: Literal["uniform", "random", "dataset"]="random", initial_learning_rate: float=1.0, lambda_param: float=1.0, vec_dim: int = 2, dataset: np.ndarray = None) -> None:
+                init_method: Literal["uniform", "random", "dataset"]="random", initial_learning_rate: float=1.0, lambda_param: float=3.0, vec_dim: int = 2, dataset: np.ndarray = None) -> None:
         
         self.M = M
         self.N = N
@@ -97,7 +99,7 @@ class KohonenNetwork:
 
     def find_best_matching_unit(self, x: np.ndarray) -> tuple:
 
-        distances = np.linalg.norm(self.cells.reshape(-1, 2) - x, axis=1)
+        distances = np.linalg.norm(self.cells.reshape(-1, self.vec_dim) - x, axis=1)
         best_i, best_j = np.unravel_index(np.argmin(distances, axis=None), (self.M, self.N))
 
         return best_i, best_j
@@ -150,3 +152,32 @@ class KohonenNetwork:
             raise ValueError("vec_dim must be 2 or 3 to plot the graph.")
 
         plt.show()
+
+
+    def plot_heatmap(self, data: np.ndarray, labels: np.ndarray) -> None:
+        label_count = np.zeros((self.M, self.N, len(np.unique(labels))))
+        for x, y in zip(data, labels):
+            i, j = self.find_best_matching_unit(x)
+            label_count[i, j, y] += 1
+            
+        winning_labels = np.argmax(label_count, axis=-1)
+
+        winning_labels.shape
+        
+        
+        # create a grid of rectangles
+        colormap = "Paired"
+        colours = plt.cm.get_cmap(colormap, len(np.unique(labels)))
+
+        for i in range(self.M):
+            for j in range(self.N):
+
+                plt.gca().add_patch(plt.Rectangle((self._pos[i, j][0], self._pos[i, j][1]), 1, 1, fill=True, color=colours(winning_labels[i, j]), label = winning_labels[i, j]))
+                print(self._pos[i, j])
+        # fit canvas to data
+        plt.xlim([0, self.M])
+        plt.ylim([0, self.N])
+
+        plt.legend(np.unique(winning_labels))
+        plt.show()
+        

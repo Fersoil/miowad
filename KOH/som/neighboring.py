@@ -59,7 +59,7 @@ class DistNeighboringFunc(NeighboringFunc):
 
 
 class GaussianNeighboringFunc(NeighboringFunc):
-    def __init__(self, initial_neighbouring_radius: float=1.0, radius_decay: bool = True, total_epochs: int=0) -> None:
+    def __init__(self, initial_neighbouring_radius: float=0.5, radius_decay: bool = True, total_epochs: int=0) -> None:
         super().__init__(initial_neighbouring_radius, radius_decay,  total_epochs)
         
                 
@@ -73,7 +73,7 @@ class GaussianNeighboringFunc(NeighboringFunc):
 
 class MinusOneGaussianNeighboringFunc(NeighboringFunc):
     # https://hannibunny.github.io/orbook/preprocessing/04gaussianDerivatives.html
-    def __init__(self, initial_neighbouring_radius: float=1.0, radius_decay: bool = False, total_epochs: int=0) -> None:
+    def __init__(self, initial_neighbouring_radius: float=0.5, radius_decay: bool = False, total_epochs: int=0) -> None:
         super().__init__(initial_neighbouring_radius, radius_decay,  total_epochs)
 
     def __call__(self, x: np.ndarray, y: np.ndarray, current_epoch: int) -> np.ndarray:

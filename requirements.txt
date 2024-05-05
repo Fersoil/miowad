@@ -4,3 +4,5 @@ pandas
 ipykernel
 matplotlib
 networkx
+scikit-learn
+seaborn
