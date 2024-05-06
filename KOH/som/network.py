@@ -127,31 +127,32 @@ class KohonenNetwork:
                     raise ValueError("vec_dim must be 2 or 3 to plot the graph.")
 
 
-    def plot_graph(self):
+    def plot_graph(self, show: bool = True, ax = None, **kwargs):
         self.update_graph()
         pos = nx.get_node_attributes(self.graph, 'pos') 
         if self.vec_dim == 2:
-            nx.draw(self.graph, pos, with_labels=True, node_size=1000, node_color="skyblue", font_size=10, font_weight="bold", font_color="black")
+            nx.draw(self.graph, pos, with_labels=True, node_size=1000, node_color="skyblue", font_size=10, font_weight="bold", font_color="black", ax=ax)
         elif self.vec_dim == 3:
-            fig = plt.figure(figsize=(10, 10))
-            ax = fig.add_subplot(111, projection='3d')
+            if ax is None:
+                fig = plt.figure(figsize=(10, 10))
+                ax = fig.add_subplot(111, projection='3d')
 
             
             nodes = np.array([pos[v] for v in self.graph.nodes])
             edges = np.array([[pos[u], pos[v]] for u, v in self.graph.edges])
 
-            ax.scatter3D(*nodes.T, alpha=0.2, s=100, color="blue")
+            ax.scatter3D(*nodes.T, **kwargs)
 
             for edge in edges:
                 ax.plot(*edge.T, color="black")
 
             ax.grid(False)
             ax.set_axis_off()
-            plt.tight_layout()
         else:
             raise ValueError("vec_dim must be 2 or 3 to plot the graph.")
-
-        plt.show()
+        
+        if show:
+            plt.show()
 
 
     def plot_heatmap(self, data: np.ndarray, labels: np.ndarray) -> None:
