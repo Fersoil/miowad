@@ -3,3 +3,4 @@ scipy
 pandas
 ipykernel
 matplotlib
+networkx
