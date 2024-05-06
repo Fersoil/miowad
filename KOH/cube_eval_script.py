@@ -138,7 +138,7 @@ for trail in range(num_trails):
     for dim in cluster_dims:
         size = dim[0] * dim[1]
         epochs = 10 * size
-        koh = KohonenNetwork(dim[0], dim[1], GaussianNeighboringFunc(initial_neighbouring_radius=0.3), vec_dim=3)    
+        koh = KohonenNetwork(dim[0], dim[1], GaussianNeighboringFunc(initial_neighbouring_radius=0.25), vec_dim=3)    
         koh.fit(cube[["x", "y", "z"]].values, epochs, history=False, verbose=False)
         som_labels = koh.predict(cube[["x", "y", "z"]].values, return_labels=True)
         scores[trail]["homogeneity"].append(homogeneity_score(cube["c"].values, som_labels))
@@ -151,5 +151,154 @@ for trail in range(num_trails):
 
 
 
-save_scores("cube_cluster_sizes_03", scores)
+save_scores("cube_cluster_sizes_025_lambda_1", scores)
+
+
+for trail in range(num_trails):
+    print(f"Trail {trail}")
+    scores[trail] = {"homogeneity": [], "completeness": [], "v_measure": [], "silhouette": [], "davies_bouldin": [], "calinski_harabasz": []}
+    for dim in cluster_dims:
+        size = dim[0] * dim[1]
+        epochs = 10 * size
+        koh = KohonenNetwork(dim[0], dim[1], GaussianNeighboringFunc(initial_neighbouring_radius=0.5), vec_dim=3)    
+        koh.fit(cube[["x", "y", "z"]].values, epochs, history=False, verbose=False)
+        som_labels = koh.predict(cube[["x", "y", "z"]].values, return_labels=True)
+        scores[trail]["homogeneity"].append(homogeneity_score(cube["c"].values, som_labels))
+        scores[trail]["completeness"].append(completeness_score(cube["c"].values, som_labels))
+        scores[trail]["v_measure"].append(v_measure_score(cube["c"].values, som_labels))
+
+        scores[trail]["silhouette"].append(silhouette_score(cube[["x", "y", "z"]].values, som_labels))
+        scores[trail]["davies_bouldin"].append(davies_bouldin_score(cube[["x", "y", "z"]].values, som_labels))
+        scores[trail]["calinski_harabasz"].append(calinski_harabasz_score(cube[["x", "y", "z"]].values, som_labels))
+
+
+
+save_scores("cube_cluster_sizes_05_lambda_1", scores)
+
+
+
+for trail in range(num_trails):
+    print(f"Trail {trail}")
+    scores[trail] = {"homogeneity": [], "completeness": [], "v_measure": [], "silhouette": [], "davies_bouldin": [], "calinski_harabasz": []}
+    for dim in cluster_dims:
+        size = dim[0] * dim[1]
+        epochs = 10 * size
+        koh = KohonenNetwork(dim[0], dim[1], GaussianNeighboringFunc(initial_neighbouring_radius=0.25), lambda_param=5, vec_dim=3)    
+        koh.fit(cube[["x", "y", "z"]].values, epochs, history=False, verbose=False)
+        som_labels = koh.predict(cube[["x", "y", "z"]].values, return_labels=True)
+        scores[trail]["homogeneity"].append(homogeneity_score(cube["c"].values, som_labels))
+        scores[trail]["completeness"].append(completeness_score(cube["c"].values, som_labels))
+        scores[trail]["v_measure"].append(v_measure_score(cube["c"].values, som_labels))
+
+        scores[trail]["silhouette"].append(silhouette_score(cube[["x", "y", "z"]].values, som_labels))
+        scores[trail]["davies_bouldin"].append(davies_bouldin_score(cube[["x", "y", "z"]].values, som_labels))
+        scores[trail]["calinski_harabasz"].append(calinski_harabasz_score(cube[["x", "y", "z"]].values, som_labels))
+
+
+
+save_scores("cube_cluster_sizes_025_lambda_1", scores)
+
+
+
+for trail in range(num_trails):
+    print(f"Trail {trail}")
+    scores[trail] = {"homogeneity": [], "completeness": [], "v_measure": [], "silhouette": [], "davies_bouldin": [], "calinski_harabasz": []}
+    for dim in cluster_dims:
+        size = dim[0] * dim[1]
+        epochs = 10 * size
+        koh = KohonenNetwork(dim[0], dim[1], GaussianNeighboringFunc(initial_neighbouring_radius=0.5), lambda_param=5, vec_dim=3)    
+        koh.fit(cube[["x", "y", "z"]].values, epochs, history=False, verbose=False)
+        som_labels = koh.predict(cube[["x", "y", "z"]].values, return_labels=True)
+        scores[trail]["homogeneity"].append(homogeneity_score(cube["c"].values, som_labels))
+        scores[trail]["completeness"].append(completeness_score(cube["c"].values, som_labels))
+        scores[trail]["v_measure"].append(v_measure_score(cube["c"].values, som_labels))
+
+        scores[trail]["silhouette"].append(silhouette_score(cube[["x", "y", "z"]].values, som_labels))
+        scores[trail]["davies_bouldin"].append(davies_bouldin_score(cube[["x", "y", "z"]].values, som_labels))
+        scores[trail]["calinski_harabasz"].append(calinski_harabasz_score(cube[["x", "y", "z"]].values, som_labels))
+
+
+
+save_scores("cube_cluster_sizes_05_lambda_5", scores)
+
+
+
+
+print("Calculating widths")
+
+widths = np.linspace(0.1, 1, 10)
+
+num_trails = 10
+
+scores = list(range(num_trails))
+epochs = 80
+
+labels = cube["c"].values
+
+for trail in range(num_trails):
+    print(f"Trail {trail}")
+    scores[trail] = {"homogeneity": [], "completeness": [], "v_measure": [], "silhouette": [], "davies_bouldin": [], "calinski_harabasz": []}
+    for width in widths:
+        koh = KohonenNetwork(2, 3, GaussianNeighboringFunc(initial_neighbouring_radius=width), vec_dim=3)    
+        koh.fit(cube[["x", "y", "z"]].values, epochs, history=False, verbose=False)
+        som_labels = koh.predict(cube[["x", "y", "z"]].values, return_labels=True)
+        scores[trail]["homogeneity"].append(homogeneity_score(cube["c"].values, som_labels))
+        scores[trail]["completeness"].append(completeness_score(cube["c"].values, som_labels))
+        scores[trail]["v_measure"].append(v_measure_score(cube["c"].values, som_labels))
+
+        scores[trail]["silhouette"].append(silhouette_score(cube[["x", "y", "z"]].values, som_labels))
+        scores[trail]["davies_bouldin"].append(davies_bouldin_score(cube[["x", "y", "z"]].values, som_labels))
+        scores[trail]["calinski_harabasz"].append(calinski_harabasz_score(cube[["x", "y", "z"]].values, som_labels))
+        
+save_scores(scores, "neighbouring_widths")
+
+
+for trail in range(num_trails):
+    print(f"Trail {trail}")
+    scores[trail] = {"homogeneity": [], "completeness": [], "v_measure": [], "silhouette": [], "davies_bouldin": [], "calinski_harabasz": []}
+    for width in widths:
+        koh = KohonenNetwork(2, 3, GaussianNeighboringFunc(initial_neighbouring_radius=width), lambda_param=5, vec_dim=3)    
+        koh.fit(cube[["x", "y", "z"]].values, epochs, history=False, verbose=False)
+        som_labels = koh.predict(cube[["x", "y", "z"]].values, return_labels=True)
+        scores[trail]["homogeneity"].append(homogeneity_score(cube["c"].values, som_labels))
+        scores[trail]["completeness"].append(completeness_score(cube["c"].values, som_labels))
+        scores[trail]["v_measure"].append(v_measure_score(cube["c"].values, som_labels))
+
+        scores[trail]["silhouette"].append(silhouette_score(cube[["x", "y", "z"]].values, som_labels))
+        scores[trail]["davies_bouldin"].append(davies_bouldin_score(cube[["x", "y", "z"]].values, som_labels))
+        scores[trail]["calinski_harabasz"].append(calinski_harabasz_score(cube[["x", "y", "z"]].values, som_labels))
+        
+save_scores(scores, "neighbouring_widths_lambda_5")
+
+
+
+
+print("Calculating different neighbouring functions")
+
+from som import MexicanSombreroNeighboringFunc, MinusOneGaussianNeighboringFunc, DistNeighboringFunc
+funcs = [GaussianNeighboringFunc(initial_neighbouring_radius=0.3), MinusOneGaussianNeighboringFunc(initial_neighbouring_radius=0.3), DistNeighboringFunc(initial_neighbouring_radius=0.3), MexicanSombreroNeighboringFunc(initial_neighbouring_radius=0.3)]
+
+num_trails = 10
+
+scores = list(range(num_trails))
+epochs = 80
+
+labels = cube["c"].values
+
+for trail in range(num_trails):
+    print(f"Trail {trail}")
+    scores[trail] = {"homogeneity": [], "completeness": [], "v_measure": [], "silhouette": [], "davies_bouldin": [], "calinski_harabasz": []}
+    for neighbouring_func in funcs:
+        koh = KohonenNetwork(2, 3, neighboring_func=neighbouring_func, vec_dim=3)    
+        koh.fit(cube[["x", "y", "z"]].values, epochs, history=False, verbose=False)
+        som_labels = koh.predict(cube[["x", "y", "z"]].values, return_labels=True)
+        scores[trail]["homogeneity"].append(homogeneity_score(cube["c"].values, som_labels))
+        scores[trail]["completeness"].append(completeness_score(cube["c"].values, som_labels))
+        scores[trail]["v_measure"].append(v_measure_score(cube["c"].values, som_labels))
+
+        scores[trail]["silhouette"].append(silhouette_score(cube[["x", "y", "z"]].values, som_labels))
+        scores[trail]["davies_bouldin"].append(davies_bouldin_score(cube[["x", "y", "z"]].values, som_labels))
+        scores[trail]["calinski_harabasz"].append(calinski_harabasz_score(cube[["x", "y", "z"]].values, som_labels))
+        
+save_scores(scores, "neighbouring_functions")
 
