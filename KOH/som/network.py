@@ -2,6 +2,7 @@ import numpy as np
 from typing import Literal
 import networkx as nx
 import matplotlib.pyplot as plt
+from matplotlib.patches import RegularPolygon
 
 import seaborn as sns
 
@@ -93,7 +94,14 @@ class KohonenNetwork:
         else:
             return np.array([[i * self.M + j for i, j in res]]).flatten()
 
-    
+    def get_mapping(self, X: np.ndarray) -> np.ndarray:
+        if self.grid == "rectangular":
+            return self.predict(X, return_labels=False)
+        elif self.grid == "hexagonal":
+            return np.array([self._pos[i, j] for i, j in self.predict(X, return_labels=False)])
+        else:
+            raise ValueError("Grid must be either 'rectangular' or 'hexagonal'")
+        
     def dist(self, x: np.ndarray, y: np.ndarray) -> float:
         return np.linalg.norm(x - y)
 
@@ -155,7 +163,7 @@ class KohonenNetwork:
             plt.show()
 
 
-    def plot_heatmap(self, data: np.ndarray, labels: np.ndarray) -> None:
+    def plot_heatmap(self, data: np.ndarray, labels: np.ndarray, colormap = "Paired") -> None:
         label_count = np.zeros((self.M, self.N, len(np.unique(labels))))
         for x, y in zip(data, labels):
             i, j = self.find_best_matching_unit(x)
@@ -167,18 +175,29 @@ class KohonenNetwork:
         
         
         # create a grid of rectangles
-        colormap = "Paired"
         colours = plt.cm.get_cmap(colormap, len(np.unique(labels)))
+        
+        patches = []
 
         for i in range(self.M):
             for j in range(self.N):
+                x, y = self._pos[i, j]
+                
+                if self.grid == "rectangular":
+                    patch = plt.Rectangle((x, y), 1, 1, fill=True, color=colours(winning_labels[i, j]), label = winning_labels[i, j])
+                elif self.grid == "hexagonal":
+                    patch = RegularPolygon((x, y), numVertices=6, radius=0.5, orientation=np.pi/6, fill=True, color=colours(winning_labels[i, j]), label = winning_labels[i, j])
+                
+                patches.append(patch)
 
-                plt.gca().add_patch(plt.Rectangle((self._pos[i, j][0], self._pos[i, j][1]), 1, 1, fill=True, color=colours(winning_labels[i, j]), label = winning_labels[i, j]))
-                print(self._pos[i, j])
+        for patch in patches:
+            plt.gca().add_patch(patch)
+        
+        
         # fit canvas to data
         plt.xlim([0, self.M])
         plt.ylim([0, self.N])
 
-        plt.legend(np.unique(winning_labels))
+        plt.legend(patches, np.unique(winning_labels), title="Labels")
         plt.show()
         
