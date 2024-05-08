@@ -71,7 +71,7 @@ for trail in range(num_trails):
 
 
 
-save_scores("cube_cluster_sizes_025_lambda_1", scores)
+save_scores(filename = "cube_cluster_sizes_025_lambda_1", scores = scores)
 
 
 for trail in range(num_trails):
@@ -93,7 +93,7 @@ for trail in range(num_trails):
 
 
 
-save_scores("cube_cluster_sizes_05_lambda_1", scores)
+save_scores(filename = "cube_cluster_sizes_05_lambda_1",scores =  scores)
 
 
 
@@ -116,7 +116,7 @@ for trail in range(num_trails):
 
 
 
-save_scores("cube_cluster_sizes_025_lambda_5", scores)
+save_scores(filename = "cube_cluster_sizes_025_lambda_5",scores = scores)
 
 
 
@@ -139,7 +139,7 @@ for trail in range(num_trails):
 
 
 
-save_scores("cube_cluster_sizes_05_lambda_5", scores)
+save_scores(filename = "cube_cluster_sizes_05_lambda_5", scores = scores)
 
 
 
@@ -170,7 +170,7 @@ for trail in range(num_trails):
         scores[trail]["davies_bouldin"].append(davies_bouldin_score(cube[["x", "y", "z"]].values, som_labels))
         scores[trail]["calinski_harabasz"].append(calinski_harabasz_score(cube[["x", "y", "z"]].values, som_labels))
         
-save_scores(scores, "neighbouring_widths")
+save_scores(scores = scores, filename="neighbouring_widths")
 
 
 for trail in range(num_trails):
@@ -188,7 +188,7 @@ for trail in range(num_trails):
         scores[trail]["davies_bouldin"].append(davies_bouldin_score(cube[["x", "y", "z"]].values, som_labels))
         scores[trail]["calinski_harabasz"].append(calinski_harabasz_score(cube[["x", "y", "z"]].values, som_labels))
         
-save_scores(scores, "neighbouring_widths_lambda_5")
+save_scores(scores = scores, filename = "neighbouring_widths_lambda_5")
 
 
 
@@ -220,5 +220,5 @@ for trail in range(num_trails):
         scores[trail]["davies_bouldin"].append(davies_bouldin_score(cube[["x", "y", "z"]].values, som_labels))
         scores[trail]["calinski_harabasz"].append(calinski_harabasz_score(cube[["x", "y", "z"]].values, som_labels))
         
-save_scores(scores, "neighbouring_functions")
+save_scores(scores = scores, filename="neighbouring_functions")
 
