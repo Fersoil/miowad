@@ -34,7 +34,7 @@ class KohonenNetwork:
                 if grid == "rectangular":
                     self._initial_graph.nodes[(i, j)]['pos'] = [i, j]
                 if grid == "hexagonal":
-                    self._initial_graph.nodes[(i, j)]['pos'] = [i * np.sqrt(3)/2, j + (j % 2) * np.sqrt(3)/2]
+                    self._initial_graph.nodes[(i, j)]['pos'] = [i * np.sqrt(3)/2, j + (i % 2) * 0.5]
 
 
         self._pos = np.zeros((M, N, 2))
@@ -135,7 +135,7 @@ class KohonenNetwork:
                     raise ValueError("vec_dim must be 2 or 3 to plot the graph.")
 
 
-    def plot_graph(self, show: bool = True, ax = None, **kwargs):
+    def plot_graph(self, show: bool = True, ax = None,  **kwargs):
         self.update_graph()
         pos = nx.get_node_attributes(self.graph, 'pos') 
         if self.vec_dim == 2:
@@ -163,7 +163,7 @@ class KohonenNetwork:
             plt.show()
 
 
-    def plot_heatmap(self, data: np.ndarray, labels: np.ndarray, colormap = "Paired") -> None:
+    def plot_heatmap(self, data: np.ndarray, labels: np.ndarray, colormap = "Paired", scale = 1) -> None:
         label_count = np.zeros((self.M, self.N, len(np.unique(labels))))
         for x, y in zip(data, labels):
             i, j = self.find_best_matching_unit(x)
@@ -186,7 +186,7 @@ class KohonenNetwork:
                 if self.grid == "rectangular":
                     patch = plt.Rectangle((x, y), 1, 1, fill=True, color=colours(winning_labels[i, j]), label = winning_labels[i, j])
                 elif self.grid == "hexagonal":
-                    patch = RegularPolygon((x, y), numVertices=6, radius=0.5, orientation=np.pi/6, fill=True, color=colours(winning_labels[i, j]), label = winning_labels[i, j])
+                    patch = RegularPolygon((x, y), numVertices=6, radius=1/np.sqrt(3), orientation=np.pi/6, fill=True, color=colours(winning_labels[i, j]), label = winning_labels[i, j])
                 
                 patches.append(patch)
 
