@@ -45,24 +45,24 @@ X = mnist.data.values
 y = mnist.target.values
 
 
-print("Evaluating net 10x10")
-idx = cross_val(X, y, cv=5, epochs=30, M=10, N=10, grid = "rectangular", verbose=True, save_path='som_snapshots/net10x10/rect/mnist_som')
+#print("Evaluating net 10x10")
+#idx = cross_val(X, y, cv=5, epochs=30, M=10, N=10, grid = "rectangular", verbose=True, save_path='som_snapshots/net10x10/rect/mnist_som')
 # save the indices
-np.save('som_snapshots/net10x10/mnist_som_rect_idx.npy', idx)
+#np.save('som_snapshots/net10x10/mnist_som_rect_idx.npy', idx)
 
-print("Evaluating net 25x25")
-idx = cross_val(X, y, cv=5, epochs=30, M=25, N=25, grid = "rectangular", verbose=True, save_path='som_snapshots/net25x25/rect/mnist_som')
-np.save('som_snapshots/net25x25/mnist_som_rect_idx.npy', idx)
+#print("Evaluating net 25x25")
+#idx = cross_val(X, y, cv=5, epochs=30, M=25, N=25, grid = "rectangular", verbose=True, save_path='som_snapshots/net25x25/rect/mnist_som')
+#np.save('som_snapshots/net25x25/mnist_som_rect_idx.npy', idx)
 
 
 
 print("Evaluating net with hexagon grid")
-idx = cross_val(X, y, cv=5, epochs=30, M=10, N=10, grid = "hexagon", verbose=True, save_path='som_snapshots/net10x10/hex/mnist_som')
+idx = cross_val(X, y, cv=5, epochs=30, M=10, N=10, grid = "hexagonal", verbose=True, save_path='som_snapshots/net10x10/hex/mnist_som')
 np.save('som_snapshots/net10x10/mnist_som_minusone_rect_idx.npy', idx)
 
 
 print("Evaluating net with hexagon grid 25x25")
-idx = cross_val(X, y, cv=5, epochs=30, M=25, N=25, grid = "hexagon", verbose=True, save_path='som_snapshots/net25x25/hex/mnist_som')
+idx = cross_val(X, y, cv=5, epochs=30, M=25, N=25, grid = "hexagonal", verbose=True, save_path='som_snapshots/net25x25/hex/mnist_som')
 np.save('som_snapshots/net10x10/mnist_som_minusone_rect_idx.npy', idx)
 
 

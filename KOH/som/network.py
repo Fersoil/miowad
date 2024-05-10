@@ -13,7 +13,7 @@ from som.neighboring import NeighboringFunc, DistNeighboringFunc, GaussianNeighb
 class KohonenNetwork:
     def __init__(self, M: int, N: int, neighboring_func: NeighboringFunc = GaussianNeighboringFunc(), grid: Literal["rectangular", "hexagonal"]="rectangular",
                 init_method: Literal["uniform", "random", "dataset"]="random", initial_learning_rate: float=1.0, lambda_param: float=3.0, vec_dim: int = 2, dataset: np.ndarray = None) -> None:
-        
+        assert grid in ["rectangular", "hexagonal"]        
         self.M = M
         self.N = N
         self.vec_dim = vec_dim
@@ -40,7 +40,10 @@ class KohonenNetwork:
         self._pos = np.zeros((M, N, 2))
         for i in range(M):
             for j in range(N):
-                self._pos[i, j] = np.array(self._initial_graph.nodes[(i, j)]['pos'])
+                try:
+                    self._pos[i, j] = np.array(self._initial_graph.nodes[(i, j)]['pos'])
+                except Exception:
+                    import pdb; pdb.set_trace()
 
         # initialize cells
         if dataset is not None:
