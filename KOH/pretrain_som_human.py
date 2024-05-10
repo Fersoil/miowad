@@ -47,16 +47,16 @@ X = np.concatenate([train.values, test.values])
 y = np.concatenate([y_train.values, y_test.values]).flatten()
 
 
-idx = cross_val(X, y, cv=5, epochs=15, M=10, N=10, grid = "rectangular", verbose=False, save_path='som_snapshots/net10x10/human_som')
+idx = cross_val(X, y, cv=5, epochs=30, M=10, N=10, grid = "rectangular", verbose=False, save_path='som_snapshots/net10x10/human_som_1')
 # save the indices
-np.save('som_snapshots/net10x10/human_som_rect_idx.npy', idx)
+np.save('som_snapshots/net10x10/human_som_rect_idx_1.npy', idx)
 
 
-idx = cross_val(X, y, cv=5, epochs=15, M=25, N=25, grid = "rectangular", verbose=False, save_path='som_snapshots/net25x25/human_som')
-np.save('som_snapshots/net25x25/human_som_rect_idx.npy', idx)
+idx = cross_val(X, y, cv=5, epochs=30, M=25, N=25, grid = "rectangular", verbose=False, save_path='som_snapshots/net25x25/human_som')
+np.save('som_snapshots/net25x25/human_som_rect_idx_1.npy', idx)
 
 
 
-idx = cross_val(X, y, cv=5, epochs=15, M=10, N=10, grid = "rectangular", neighbouring_func=MinusOneGaussianNeighboringFunc(initial_neighbouring_radius=0.3), lambda_param = 10, verbose=False, save_path='som_snapshots/net10x10/human_som_minusone')
-np.save('som_snapshots/net10x10/human_som_minusone_rect_idx.npy', idx)
+idx = cross_val(X, y, cv=5, epochs=30, M=10, N=10, grid = "rectangular", neighbouring_func=MinusOneGaussianNeighboringFunc(initial_neighbouring_radius=0.3), lambda_param = 10, verbose=False, save_path='som_snapshots/net10x10/human_som_minusone_1')
+np.save('som_snapshots/net10x10/human_som_minusone_rect_idx_1.npy', idx)
 
