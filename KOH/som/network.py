@@ -115,7 +115,7 @@ class KohonenNetwork:
     def update_cells(self, x: np.ndarray, i: int, j: int, t: int) -> None:
         best_unit = self._pos[i, j]
         influence = self.neighboring_func(self._pos, best_unit, t)
-        influence = np.repeat(np.expand_dims(influence, axis=2), self.vec_dim, axis = 2)
+        influence = np.expand_dims(influence, axis=2)
         self.cells += self.learning_rate(t) * influence * (x - self.cells)
 
     def learning_rate(self, t: int) -> float:
