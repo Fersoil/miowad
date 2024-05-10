@@ -63,8 +63,9 @@ class GaussianNeighboringFunc(NeighboringFunc):
         super().__init__(initial_neighbouring_radius, radius_decay,  total_epochs)
         
                 
-    def __call__(self, x: np.ndarray, y: np.ndarray, current_epoch: int) -> np.ndarray:
-        dist = np.linalg.norm(x - y) 
+    def __call__(self, positions: np.ndarray, y: np.ndarray, current_epoch: int) -> np.ndarray:
+        # positions is a matrix of shape (n, m) where n is the number of nodes and m is the number of features on axis 
+        dist = np.linalg.norm(positions - y, axis = 2) 
         return np.exp(-(dist**2) / (2 * self.neighbouring_radius(current_epoch)**2))
 
     def __str__(self) -> str:
@@ -76,8 +77,8 @@ class MinusOneGaussianNeighboringFunc(NeighboringFunc):
     def __init__(self, initial_neighbouring_radius: float=0.5, radius_decay: bool = False, total_epochs: int=0) -> None:
         super().__init__(initial_neighbouring_radius, radius_decay,  total_epochs)
 
-    def __call__(self, x: np.ndarray, y: np.ndarray, current_epoch: int) -> np.ndarray:
-        dist = np.linalg.norm(x - y)
+    def __call__(self, positions: np.ndarray, y: np.ndarray, current_epoch: int) -> np.ndarray:
+        dist = np.linalg.norm(positions - y, axis = 2)
         gaussian = np.exp(-(dist**2) / (2 * self.neighbouring_radius(current_epoch)**2))
         # need to do some scaling to make it work
         return - gaussian * (dist**2 / (self.neighbouring_radius(current_epoch)**2) - 1)
@@ -96,8 +97,8 @@ class MexicanSombreroNeighboringFunc(NeighboringFunc):
             print("The decay is not implemented yet for this function")
 
 
-    def __call__(self, x: np.ndarray, y: np.ndarray, t: int) -> np.ndarray:
-        dist = np.linalg.norm(x - y)
+    def __call__(self, positions: np.ndarray, y: np.ndarray, t: int) -> np.ndarray:
+        dist = np.linalg.norm(positions - y, axis = 2)
         return (2 - 4 * dist**2) * np.exp(-(dist**2))
 
     def __str__(self) -> str:

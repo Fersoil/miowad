@@ -114,11 +114,9 @@ class KohonenNetwork:
     
     def update_cells(self, x: np.ndarray, i: int, j: int, t: int) -> None:
         best_unit = self._pos[i, j]
-        for m in range(self.M):
-            for n in range(self.N):
-                current_unit = self._pos[m, n]
-                influence = self.neighboring_func(current_unit, best_unit, t)
-                self.cells[m, n] += self.learning_rate(t) * influence * (x - self.cells[m, n])
+        influence = self.neighboring_func(self._pos, best_unit, t)
+        influence = np.repeat(np.expand_dims(influence, axis=2), self.vec_dim, axis = 2)
+        self.cells += self.learning_rate(t) * influence * (x - self.cells)
 
     def learning_rate(self, t: int) -> float:
         # this is the alpha param (or L)
