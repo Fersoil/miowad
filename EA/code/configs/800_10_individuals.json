@@ -1,5 +1,5 @@
 {
-    "experiment_name": "800_default",
+    "experiment_name": "800_10_individuals",
     "dataset_name": "800",
     "experiment_filepath" : "experiments",
     "reruns": 3,
