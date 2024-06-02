@@ -1,0 +1,21 @@
+{
+    "experiment_name": "800_move",
+    "dataset_name": "800",
+    "experiment_filepath" : "experiments",
+    "reruns": 3,
+
+    "hyperparameters": {
+        "n_generations": 30,
+        "n_individuals": 100,
+        "iterations": 50,
+        "elite": 0.1,
+        "type": ["move", "add"],
+        "mutation_probs": [0.7, 0.3],
+        "axis": "both",
+        "how_many_rects_move": 1,
+        "magnitude_move": 1,
+        "collide_strategy": "skip",
+        "add_new_rects": true,
+        "add_new_rects_iterations": 10
+    }
+}
