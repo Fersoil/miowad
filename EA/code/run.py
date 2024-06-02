@@ -27,7 +27,7 @@ def parse_config(config_filepath):
     try:
         experiment_name = config_file["experiment_name"]
         dataset_name = config_file["dataset_name"]
-        experiment_filepath = config_file["experiment_filepath"]
+        config_file["experiment_filepath"] = Path(config_file["experiment_filepath"])
         reruns = config_file["reruns"]
         hyperparameters = config_file["hyperparameters"]
     except KeyError:
@@ -41,7 +41,7 @@ def run(config_file):
     
     data = load_data(config_file["dataset_name"])
     
-    Path(config_file["experiment_filepath"] / config_file["experiment_name"]).mkdir(parents=True, exist_ok=True)
+    Path(Path(config_file["experiment_filepath"]) / config_file["experiment_name"]).mkdir(parents=True, exist_ok=True)
     
     r = int(config_file["dataset_name"])
     
@@ -59,7 +59,7 @@ def run(config_file):
         avg_individual_scores_accross_runs[run] = avg_individual_scores
         times_accross_runs[run] = times
 
-        with open(config_file["experiment_filepath"] / config_file["experiment_name"] / str(run + ".pkl"), "wb") as f:
+        with open(Path(config_file["experiment_filepath"]) / config_file["experiment_name"] / str(str(run) + ".pkl"), "wb") as f:
             pickle.dump((best_individual_scores, avg_individual_scores, times, population), f)
 
     best_individual_scores_accross_runs = pd.DataFrame(best_individual_scores_accross_runs)
