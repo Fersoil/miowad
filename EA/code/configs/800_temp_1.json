@@ -1,5 +1,5 @@
 {
-    "experiment_name": "800_crossover_03",
+    "experiment_name": "800_temp_1",
     "dataset_name": "800",
     "experiment_filepath" : "experiments",
     "reruns": 3,
@@ -13,10 +13,10 @@
         "mutation_probs": [0.7, 0.3],
         "axis": "both",
         "how_many_rects_move": 1,
-        "how_many_individuals_crossover": 0.3,
         "magnitude_move": 1,
         "collide_strategy": "skip",
         "add_new_rects": true,
-        "add_new_rects_iterations": 10
+        "add_new_rects_iterations": 10,
+        "temperature": 1
     }
 }
