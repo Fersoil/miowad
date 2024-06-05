@@ -9,7 +9,7 @@ from .regularizations import L1, L2, NoneReg
 class MLP:
     __slots__ = ["layers", "depth", "loss", "output_type", "output_dim", "regularization"]
 
-    def __init__(self, init_layers, input, output_type="regression", regularization = "l2", regularization_alpha = 0.01, weights=None, biases=None, verbose = False):
+    def __init__(self, init_layers, input, output_type="regression", regularization = "l2", regularization_alpha = 0.00, weights=None, biases=None, verbose = False):
             """
             Initialize the Multi-Layer Perceptron (MLP) network.
 
