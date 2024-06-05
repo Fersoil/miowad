@@ -1,5 +1,5 @@
 {
-    "experiment_name": "800_temp_10",
+    "experiment_name": "800_temp_10000",
     "dataset_name": "800",
     "experiment_filepath" : "experiments",
     "reruns": 3,
@@ -17,6 +17,6 @@
         "collide_strategy": "skip",
         "add_new_rects": true,
         "add_new_rects_iterations": 10,
-        "temperature": 10
+        "temperature": 10000
     }
 }
