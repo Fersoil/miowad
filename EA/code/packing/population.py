@@ -89,6 +89,7 @@ class Population:
         assert self.population_size > n_elite > 0, "Number of elite individuals must be greater than 0 and less than the population size"
         if temperature is None:
             temperature = self.temperature
+        print(temperature)
         self.individuals = sorted(self.individuals, key=lambda individual: individual.score(), reverse=True)
         
         scores = self.scores()
