@@ -3,7 +3,7 @@ from typing import Literal
 import networkx as nx
 import matplotlib.pyplot as plt
 from matplotlib.patches import RegularPolygon
-
+from matplotlib.lines import Line2D
 import seaborn as sns
 
 
@@ -13,7 +13,7 @@ from som.neighboring import NeighboringFunc, DistNeighboringFunc, GaussianNeighb
 class KohonenNetwork:
     def __init__(self, M: int, N: int, neighboring_func: NeighboringFunc = GaussianNeighboringFunc(), grid: Literal["rectangular", "hexagonal"]="rectangular",
                 init_method: Literal["uniform", "random", "dataset"]="random", initial_learning_rate: float=1.0, lambda_param: float=3.0, vec_dim: int = 2, dataset: np.ndarray = None) -> None:
-        
+        assert grid in ["rectangular", "hexagonal"]        
         self.M = M
         self.N = N
         self.vec_dim = vec_dim
@@ -40,7 +40,10 @@ class KohonenNetwork:
         self._pos = np.zeros((M, N, 2))
         for i in range(M):
             for j in range(N):
-                self._pos[i, j] = np.array(self._initial_graph.nodes[(i, j)]['pos'])
+                try:
+                    self._pos[i, j] = np.array(self._initial_graph.nodes[(i, j)]['pos'])
+                except Exception:
+                    import pdb; pdb.set_trace()
 
         # initialize cells
         if dataset is not None:
@@ -161,11 +164,13 @@ class KohonenNetwork:
             plt.show()
 
 
-    def plot_heatmap(self, data: np.ndarray, labels: np.ndarray, colormap = "Paired", scale = 1) -> None:
+    def plot_heatmap(self, data: np.ndarray, labels: np.ndarray, colormap = "Paired", plot = False) -> None:
         label_count = np.zeros((self.M, self.N, len(np.unique(labels))))
+        label_mapping = {label: i for i, label in enumerate(np.unique(labels))}
+        
         for x, y in zip(data, labels):
             i, j = self.find_best_matching_unit(x)
-            label_count[i, j, y] += 1
+            label_count[i, j, label_mapping[y]] += 1
             
         winning_labels = np.argmax(label_count, axis=-1)
 
@@ -196,6 +201,9 @@ class KohonenNetwork:
         plt.xlim([0, self.M])
         plt.ylim([0, self.N])
 
-        plt.legend(patches, np.unique(winning_labels), title="Labels")
-        plt.show()
-        
+        custom_legend = [Line2D([0], [0],markersize=1, color=colours(i), lw=7, label=label) for label, i in label_mapping.items()]
+
+
+        plt.legend(custom_legend, np.unique(labels), title="Labels", loc = "upper right")
+        if plot:
+            plt.show()        
