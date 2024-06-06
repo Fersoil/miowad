@@ -9,6 +9,6 @@
 
     "hyperparameters": {
         "n_generations": 300,
-        "magnitude": 0.01
+        "magnitude": 0.1
     }
 }
