@@ -50,10 +50,16 @@ def load_data(filename, random_state=0):
     
     if filename == "auto-mpg":
         data = pd.read_csv("../data/auto-mpg.data", delim_whitespace=True, header=None)
+
         data.columns = ["mpg", "cylinders", "displacement", "horsepower", "weight", "acceleration", "model year", "origin", "car name"]
-        X = data.iloc[:, 1:-1].to_numpy()
-        y = data.iloc[:, 0].to_numpy()
-        
+        data = data[["mpg", "cylinders", "displacement", "horsepower", "weight", "acceleration", "model year", "origin"]]
+
+        data = data.apply(pd.to_numeric, errors='coerce')
+        data = data.dropna()
+
+        X = data.iloc[:, 1:].to_numpy()
+        y = data.iloc[:, 0].to_numpy().reshape(-1, 1)
+
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=random_state)
         return X_train, y_train, X_test, y_test
         
