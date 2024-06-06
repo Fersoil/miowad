@@ -1,5 +1,5 @@
 {
-    "experiment_name": "mpg_0_01",
+    "experiment_name": "mpg_0_1",
     "dataset_name": "auto-mpg",
     "experiment_filepath" : "experiments_mlp",
     "problem_type": "regression",
