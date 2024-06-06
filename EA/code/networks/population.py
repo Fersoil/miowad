@@ -142,6 +142,10 @@ class Population:
     def get_scores(self, train = True):
         return np.array([self.score(individual, train) for individual in self.individuals])
     
+    
+    def best_individual(self, train = True):
+        return self.individuals[np.argmin(self.get_scores(train))]
+    
     def best_score(self, train = True):
         return min(self.get_scores(train))
         
