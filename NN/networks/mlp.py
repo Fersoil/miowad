@@ -226,7 +226,6 @@ class MLP:
             
         for i in range(self.depth):
             self.layers[i].update_params(dw_table[i], db_table[i])
-    
 
     def train(self, input, y, input_val = None, y_val = None, max_epochs = 100, batch_size = 32, learning_rate = 0.01, stochastic_descent = False, momentum = False, 
               momentum_decay = 0.9, rms_prop = False, squared_gradient_decay = 0.99, adam = False, epsilon=1e-8, early_stopping = True, min_stopping_delta = 1e-5, patience = 5, verbose=True, plot_losses = True):
