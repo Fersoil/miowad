@@ -1,0 +1,14 @@
+{
+    "experiment_name": "iris_0_1",
+    "dataset_name": "iris",
+    "experiment_filepath" : "experiments_mlp",
+    "problem_type": "classification",
+    "reruns": 5,
+
+    "n_indviduals": 100,
+
+    "hyperparameters": {
+        "n_generations": 300,
+        "magnitude": 0.1
+    }
+}

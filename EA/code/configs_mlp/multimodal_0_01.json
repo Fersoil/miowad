@@ -1,0 +1,15 @@
+{
+    "experiment_name": "multimodal_0_01",
+    "dataset_name": "multimodal",
+    "experiment_filepath" : "experiments_mlp",
+    "problem_type": "regression",
+    "reruns": 5,
+
+    "n_indviduals": 100,
+
+    "hyperparameters": {
+        "n_generations": 300,
+        "magnitude": 0.01,
+        "verbose": true
+    }
+}
